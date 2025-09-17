@@ -1,4 +1,10 @@
 // NYC Distressed Real Estate Dashboard JavaScript
+
+// Configuration - Replace with your Render URL after deployment
+const API_BASE_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://your-app-name.onrender.com';
+
 class NYCRealEstateDashboard {
     constructor() {
         this.deals = [];
@@ -190,7 +196,7 @@ class NYCRealEstateDashboard {
 
             let data;
             try {
-                const response = await fetch(`/api/opportunities?days=${days}&quick=false`, {
+                const response = await fetch(`${API_BASE_URL}/api/opportunities?days=${days}&quick=false`, {
                     signal: controller.signal
                 });
                 clearTimeout(timeoutId);
@@ -230,7 +236,7 @@ class NYCRealEstateDashboard {
 
             // Check if it's a timeout or network error
             if (error.name === 'TypeError' && error.message.includes('fetch')) {
-                this.showError('Network error: Unable to connect to the backend server. Please ensure the server is running at http://localhost:5000');
+                this.showError('Network error: Unable to connect to the backend server. Please check your internet connection.');
             } else if (error.name === 'AbortError') {
                 this.showError('Request timed out. The server may be processing a large dataset. Please try again.');
             } else {
@@ -254,7 +260,7 @@ class NYCRealEstateDashboard {
             this.updateLoadingStatus('Running ML predictions...');
             
             // Make actual API call to Python backend
-            const response = await fetch('/api/scan', {
+            const response = await fetch(`${API_BASE_URL}/api/scan`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -634,7 +640,7 @@ class NYCRealEstateDashboard {
         
         try {
             // Attempt to fetch real owner information
-            const response = await fetch('/api/property-owner', {
+            const response = await fetch(`${API_BASE_URL}/api/property-owner`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ address, borough })
@@ -737,7 +743,7 @@ class NYCRealEstateDashboard {
                 document.getElementById('progressBar').style.width = `${progress}%`;
                 
                 try {
-                    const response = await fetch('/api/property-owner', {
+                    const response = await fetch(`${API_BASE_URL}/api/property-owner`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ address: deal.address, borough: deal.borough })

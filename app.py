@@ -1475,8 +1475,13 @@ if __name__ == '__main__':
 
     atexit.register(cleanup)
 
-    try:
-        app.run(debug=True, host='0.0.0.0', port=5000)
-    except KeyboardInterrupt:
-        cleanup()
-        print("👋 Server stopped")
+    if __name__ == '__main__':
+        # Development server
+        try:
+            app.run(debug=True, host='0.0.0.0', port=5000)
+        except KeyboardInterrupt:
+            cleanup()
+            print("👋 Server stopped")
+    else:
+        # Production server (Gunicorn)
+        atexit.register(cleanup)
