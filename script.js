@@ -3,7 +3,7 @@
 // Configuration - Replace with your Render URL after deployment
 const API_BASE_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:5000'
-    : 'https://your-app-name.onrender.com';
+    : 'https://health-violation-data-scaper-backend.onrender.com';
 
 class NYCRealEstateDashboard {
     constructor() {
