@@ -1455,6 +1455,7 @@ if __name__ == '__main__':
     print("🚀 Starting NYC Distressed Real Estate Backend with REAL DATA")
     print("📊 Features: Real NYC health violation data + ML real estate predictions")
     print("🌐 Website available at: http://localhost:5000")
+    print("🚀 Ready for production deployment")
 
     import atexit
 
