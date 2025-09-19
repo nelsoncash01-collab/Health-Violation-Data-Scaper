@@ -26,16 +26,24 @@ class NYCRealEstateDashboard {
         this.initializeEventListeners();
         this.initializeTabs();
 
-        // Skip mock data generation - load real data instead
+        // Initialize charts and dashboard immediately (no delay)
+        this.initializeRiskDashboard();
+        this.initializeCharts();
 
-        // Initialize charts and dashboard after DOM is ready
-        setTimeout(() => {
-            this.initializeRiskDashboard();
-            this.initializeCharts();
-        }, 100);
+        // Load data with overall timeout
+        const loadTimeout = setTimeout(() => {
+            console.log('⏰ Loading timeout - showing error');
+            this.hideLoading();
+            this.showError('Loading is taking too long. Please refresh the page.');
+        }, 30000); // 30 second overall timeout
 
-        // Load real data in background (non-blocking)
-        this.loadDashboardDataAsync();
+        try {
+            await this.loadDashboardDataAsync();
+            clearTimeout(loadTimeout);
+        } catch (error) {
+            clearTimeout(loadTimeout);
+            console.error('Initialization failed:', error);
+        }
     }
 
     showInitialSkeletonUI() {
@@ -52,14 +60,11 @@ class NYCRealEstateDashboard {
     async loadDashboardDataAsync() {
         // Load data without blocking the UI
         try {
-            // First try to show cached/quick data
-            this.showQuickData();
-
-            // Then load full data in background
+            // Load data immediately - no need for complex async flow
             await this.loadDashboardData();
         } catch (error) {
-            console.log('Background data loading failed, using mock data');
-            // Keep showing mock data if API fails
+            console.log('Data loading failed:', error);
+            this.showError('Unable to load data. Please refresh the page.');
         }
     }
 
@@ -236,45 +241,36 @@ class NYCRealEstateDashboard {
             console.log(`🔄 Loading data for ${days} days...`);
             this.showLoading('Loading restaurant closure data...');
 
-            // Try quick cached data first with short timeout
+            // Single API call with quick mode first, then fallback
             let data;
+
+            // Try quick cache first (should be instant)
+            console.log('🚀 Trying quick cache...');
             try {
-                console.log('🚀 Trying quick cache first...');
-                const quickResponse = await fetch(`${API_BASE_URL}/api/opportunities?days=${days}&quick=true`, {
-                    signal: AbortSignal.timeout(5000) // 5 second timeout for quick call
+                const response = await fetch(`${API_BASE_URL}/api/opportunities?days=${days}&quick=true`, {
+                    signal: AbortSignal.timeout(10000) // 10 second timeout
                 });
 
-                if (quickResponse.ok) {
-                    const quickData = await quickResponse.json();
-                    if (quickData.success && quickData.opportunities && quickData.opportunities.length > 0) {
-                        console.log('✅ Quick cache hit!');
-                        data = quickData;
-                    }
-                }
-            } catch (quickError) {
-                console.log('⚡ Quick cache miss, trying full load...');
-            }
-
-            // If no quick data, try full load with shorter timeout
-            if (!data) {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000); // Reduced to 30 seconds
-
-                try {
-                    const response = await fetch(`${API_BASE_URL}/api/opportunities?days=${days}&quick=false`, {
-                        signal: controller.signal
-                    });
-                    clearTimeout(timeoutId);
-
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                    }
-
+                if (response.ok) {
                     data = await response.json();
-                } catch (fetchError) {
-                    clearTimeout(timeoutId);
-                    throw fetchError;
+                    if (data.success && data.opportunities && data.opportunities.length > 0) {
+                        console.log('✅ Quick cache success!');
+                    } else {
+                        console.log('⚠️ Quick cache empty, trying full load...');
+                        // Try full load as fallback
+                        const fullResponse = await fetch(`${API_BASE_URL}/api/opportunities?days=${days}&quick=false`, {
+                            signal: AbortSignal.timeout(20000) // 20 second timeout for full load
+                        });
+                        if (fullResponse.ok) {
+                            data = await fullResponse.json();
+                        }
+                    }
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
+            } catch (error) {
+                console.log('❌ API call failed:', error.message);
+                throw error;
             }
             console.log(`📊 Received ${data.opportunities?.length || 0} opportunities for ${days} days`);
 
