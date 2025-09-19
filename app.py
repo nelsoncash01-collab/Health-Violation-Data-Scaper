@@ -734,10 +734,15 @@ class NYCRealEstatePricePredictor:
             }
 
 class RestaurantScraper:
-    def __init__(self):
+    def __init__(self, lazy_init=False):
         self.api_base_url = "https://data.cityofnewyork.us/resource/43nn-pn8j.json"
         self.hmc_url = "https://data.cityofnewyork.us/resource/wvxf-dwi5.json"
-        self.re_predictor = NYCRealEstatePricePredictor()
+
+        # Only initialize heavy ML model if not in lazy mode
+        if not lazy_init:
+            self.re_predictor = NYCRealEstatePricePredictor()
+        else:
+            self.re_predictor = None  # Initialize later if needed
 
         # Caching system
         self.cache_file = 'violations_cache.json'
@@ -750,9 +755,18 @@ class RestaurantScraper:
         # Clean up expired cache entries on startup
         self._cleanup_expired_cache()
 
-        # Set global instance for cleanup
+        # Set global instance for cleanup (only if predictor exists)
         global predictor_instance
-        predictor_instance = self.re_predictor
+        if self.re_predictor:
+            predictor_instance = self.re_predictor
+
+    def _ensure_predictor_loaded(self):
+        """Load the price predictor if not already loaded (lazy loading)"""
+        if self.re_predictor is None:
+            print("🔄 Loading price predictor for processing...")
+            self.re_predictor = NYCRealEstatePricePredictor()
+            global predictor_instance
+            predictor_instance = self.re_predictor
 
     def _load_cache(self):
         """Load cached violation data"""
@@ -1082,6 +1096,10 @@ class RestaurantScraper:
         if not raw_data:
             return []
 
+        # Ensure predictor is loaded if we need real estate predictions
+        if include_real_estate or include_owner_lookup:
+            self._ensure_predictor_loaded()
+
         # Group violations by restaurant
         restaurant_groups = {}
 
@@ -1350,7 +1368,7 @@ def get_opportunities():
 
         # Use global scraper instance for consistent caching
         if scraper_instance is None:
-            scraper_instance = RestaurantScraper()
+            scraper_instance = RestaurantScraper(lazy_init=True)  # Only load cache, not ML model
 
         # ALWAYS try cache first for fast loading
         cached_opportunities = scraper_instance.get_cached_opportunities(days_back=days)
