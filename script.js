@@ -30,6 +30,18 @@ class NYCRealEstateDashboard {
         this.initializeRiskDashboard();
         this.initializeCharts();
 
+        // Add force load button for debugging
+        setTimeout(() => {
+            const dealsCard = document.querySelector('.deals-card .card-header');
+            if (dealsCard) {
+                const forceBtn = document.createElement('button');
+                forceBtn.innerHTML = '🔥 FORCE LOAD';
+                forceBtn.style.cssText = 'background: red; color: white; padding: 8px; border: none; border-radius: 4px; margin-left: 10px; font-size: 12px;';
+                forceBtn.onclick = () => this.loadDashboardDataAsync();
+                dealsCard.appendChild(forceBtn);
+            }
+        }, 1000);
+
         // Load data with overall timeout
         const loadTimeout = setTimeout(() => {
             console.log('⏰ Loading timeout - showing error');
@@ -77,10 +89,32 @@ class NYCRealEstateDashboard {
     async loadDashboardDataAsync() {
         // Load data without blocking the UI
         try {
-            // Load data immediately - no need for complex async flow
+            console.log('🔥 FORCE LOADING DATA NOW');
+            // FORCE direct API call to working endpoint
+            const response = await fetch('https://health-violation-data-scaper-backend.onrender.com/api/opportunities?days=30&quick=false&force=' + Date.now());
+            const data = await response.json();
+            console.log('🔥 FORCED DATA RESPONSE:', data);
+
+            if (data && data.success && data.opportunities) {
+                this.deals = data.opportunities;
+                this.filteredDeals = [...this.deals];
+                console.log('🔥 FORCE LOADED', this.deals.length, 'opportunities');
+
+                // Force update everything
+                this.updateStats(data.stats);
+                this.renderDeals();
+                this.updateRiskDashboard();
+                this.updateCharts();
+                this.hideLoading();
+
+                console.log('🔥 FORCE UPDATE COMPLETE');
+                return;
+            }
+
+            // Fallback to original logic if force fails
             await this.loadDashboardData();
         } catch (error) {
-            console.log('Data loading failed:', error);
+            console.log('❌ Data loading failed:', error);
             this.showError('Unable to load data. Please refresh the page.');
         }
     }
