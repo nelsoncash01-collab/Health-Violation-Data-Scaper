@@ -124,29 +124,31 @@ class NYCRealEstateDashboard {
     }
 
     async loadDashboardDataAsync() {
-        // Load data without blocking the UI
+        // Load data automatically using the same method that works in the test button
         try {
-            this.updateDebugStatus('🔥 FORCE LOADING DATA NOW');
-            // FORCE direct API call to working endpoint
-            const response = await fetch('https://health-violation-data-scaper-backend.onrender.com/api/opportunities?days=30&quick=false&force=' + Date.now());
+            this.updateDebugStatus('🚀 AUTO-LOADING OPPORTUNITIES...');
+
+            // Use the exact same API call that works in the test button
+            const response = await fetch('https://health-violation-data-scaper-backend.onrender.com/api/opportunities?days=30&quick=false&auto=' + Date.now());
             this.updateDebugStatus('📡 API Response received');
 
             const data = await response.json();
-            this.updateDebugStatus(`📊 Data parsed: ${data?.opportunities?.length || 0} opportunities`);
+            this.updateDebugStatus(`📊 Received: ${data?.opportunities?.length || 0} opportunities`);
 
             if (data && data.success && data.opportunities) {
+                // Use the same logic as the working test button
                 this.deals = data.opportunities;
                 this.filteredDeals = [...this.deals];
-                this.updateDebugStatus(`✅ FORCE LOADED ${this.deals.length} opportunities`);
+                this.updateDebugStatus(`✅ AUTO-LOADED ${this.deals.length} opportunities`);
 
-                // Force update everything
+                // Update everything (same as test button)
                 this.updateStats(data.stats);
                 this.renderDeals();
                 this.updateRiskDashboard();
                 this.updateCharts();
                 this.hideLoading();
 
-                this.updateDebugStatus('🎉 FORCE UPDATE COMPLETE - SUCCESS!');
+                this.updateDebugStatus('🎉 AUTO-LOAD COMPLETE - SUCCESS!');
 
                 // Hide debug box after 10 seconds on success
                 setTimeout(() => {
@@ -157,14 +159,13 @@ class NYCRealEstateDashboard {
                 }, 10000);
 
                 return;
+            } else {
+                this.updateDebugStatus('❌ API returned no data');
+                this.showError('No opportunities data received from API');
             }
-
-            this.updateDebugStatus('⚠️ Force load failed, trying fallback...');
-            // Fallback to original logic if force fails
-            await this.loadDashboardData();
         } catch (error) {
-            this.updateDebugStatus(`❌ ERROR: ${error.message}`);
-            this.showError('Unable to load data. Please refresh the page.');
+            this.updateDebugStatus(`❌ AUTO-LOAD ERROR: ${error.message}`);
+            this.showError('Unable to load data automatically. Use the TEST LOAD button.');
         }
     }
 
@@ -1114,17 +1115,20 @@ class NYCRealEstateDashboard {
     initializeValuePieChart() {
         const ctx = document.getElementById('valuePieChart');
         if (!ctx) {
+            this.updateDebugStatus('❌ valuePieChart canvas not found');
             console.error('Cannot find valuePieChart canvas element');
             return;
         }
 
         // Wait for Chart.js to load if not available yet
         if (typeof Chart === 'undefined') {
+            this.updateDebugStatus('⏳ Waiting for Chart.js to load...');
             console.log('Chart.js not loaded yet, retrying in 100ms...');
             setTimeout(() => this.initializeValuePieChart(), 100);
             return;
         }
 
+        this.updateDebugStatus('📊 Initializing histogram chart...');
         console.log('Initializing value histogram chart with $50K bins');
 
         this.valuePieChart = new Chart(ctx, {
@@ -1203,6 +1207,7 @@ class NYCRealEstateDashboard {
 
     updateValuePieChart() {
         if (!this.valuePieChart || !this.deals) {
+            this.updateDebugStatus(`❌ Chart update failed: chart=${!!this.valuePieChart}, deals=${!!this.deals}`);
             console.log('Cannot update value chart: chart or deals missing', {
                 hasChart: !!this.valuePieChart,
                 hasDeals: !!this.deals,
@@ -1211,6 +1216,7 @@ class NYCRealEstateDashboard {
             return;
         }
 
+        this.updateDebugStatus(`📊 Updating histogram with ${this.deals.length} deals`);
         console.log('Updating value histogram with', this.deals.length, 'deals');
 
         // Create $50K bins for histogram
