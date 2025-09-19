@@ -1357,6 +1357,10 @@ document.addEventListener('DOMContentLoaded', () => {
         window.dashboard = dashboard;  // Make it globally accessible for test
         console.log('✅ Dashboard created successfully');
 
+        // Force create debug status box immediately
+        dashboard.createDebugStatus();
+        dashboard.updateDebugStatus('🎉 Dashboard initialized successfully!');
+
         // Update the HTML test status
         const statusEl = document.getElementById('jsStatus');
         if (statusEl) {

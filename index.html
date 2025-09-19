@@ -15,7 +15,8 @@
     <div style="position: fixed; top: 10px; left: 10px; background: lime; color: black; padding: 10px; z-index: 10000; border: 3px solid red; font-weight: bold;">
         ✅ HTML LOADED<br>
         Time: <span id="htmlTime">loading...</span><br>
-        JavaScript: <span id="jsStatus">NOT LOADED</span>
+        JavaScript: <span id="jsStatus">NOT LOADED</span><br>
+        <button onclick="testLoad()" style="margin-top: 5px; background: orange; border: none; padding: 5px;">🔥 TEST LOAD</button>
     </div>
 
     <!-- Header -->
@@ -292,6 +293,38 @@
         document.getElementById('htmlTime').textContent = new Date().toLocaleTimeString();
         document.getElementById('jsStatus').textContent = 'BASIC JS WORKING';
         document.getElementById('jsStatus').style.color = 'green';
+
+        // Test load function that can be called manually
+        function testLoad() {
+            document.getElementById('jsStatus').textContent = 'TESTING...';
+
+            if (window.dashboard) {
+                document.getElementById('jsStatus').textContent = 'DASHBOARD OK - TESTING API...';
+
+                // Force call the API directly
+                fetch('https://health-violation-data-scaper-backend.onrender.com/api/opportunities?days=30&quick=false&test=' + Date.now())
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('jsStatus').textContent = `SUCCESS: ${data.opportunities?.length || 0} opportunities`;
+                    document.getElementById('jsStatus').style.backgroundColor = 'green';
+
+                    // Force dashboard to load the data
+                    if (window.dashboard && data.opportunities) {
+                        window.dashboard.deals = data.opportunities;
+                        window.dashboard.filteredDeals = [...data.opportunities];
+                        window.dashboard.renderDeals();
+                        window.dashboard.updateStats(data.stats);
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('jsStatus').textContent = 'API ERROR: ' + error.message;
+                    document.getElementById('jsStatus').style.backgroundColor = 'red';
+                });
+            } else {
+                document.getElementById('jsStatus').textContent = 'NO DASHBOARD!';
+                document.getElementById('jsStatus').style.backgroundColor = 'red';
+            }
+        }
 
         // Test if our main script loads
         setTimeout(() => {

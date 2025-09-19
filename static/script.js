@@ -1,25 +1,36 @@
 // NYC Distressed Real Estate Dashboard JavaScript
+
+// Configuration - Replace with your Render URL after deployment
+const API_BASE_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000'
+    : 'https://health-violation-data-scaper-backend.onrender.com';
+
 class NYCRealEstateDashboard {
     constructor() {
-        this.map = null;
         this.deals = [];
         this.filteredDeals = [];
         this.charts = {};
+        this.valuePieChart = null;
         this.baseChartsData = {
             neighborhoods: { Manhattan: 35, Brooklyn: 25, Queens: 20, Bronx: 15, 'Staten Island': 5 }
         };
-        
+
         this.init();
     }
 
     async init() {
         this.initializeEventListeners();
-        this.initializeMap();
+        this.initializeRiskDashboard();
         this.initializeCharts();
         this.initializeTabs();
-        
-        // Load initial data
-        await this.loadDashboardData();
+
+        // Show loading skeleton immediately
+        this.showLoadingSkeleton();
+
+        // Load initial data with delay to allow UI to render first
+        setTimeout(() => {
+            this.loadDashboardData();
+        }, 100);
     }
 
     initializeEventListeners() {
@@ -88,15 +99,42 @@ class NYCRealEstateDashboard {
     }
 
     initializeMap() {
-        // Initialize Leaflet map
-        this.map = L.map('map').setView([40.7589, -73.9851], 11);
+        // Initialize Leaflet map with higher zoom for better accuracy checking
+        this.map = L.map('map').setView([40.7589, -73.9851], 12);
 
-        // Add tile layer
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 20
-        }).addTo(this.map);
+        // Define multiple tile layers for detailed viewing
+        const baseLayers = {
+            'Detailed Street': L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
+            }),
+            'Satellite': L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+                maxZoom: 19
+            }),
+            'Hybrid (Satellite + Labels)': L.layerGroup([
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 19
+                }),
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 19
+                })
+            ]),
+            'Dark Theme': L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            })
+        };
+
+        // Set default layer to Detailed Street for accuracy checking
+        baseLayers['Detailed Street'].addTo(this.map);
+
+        // Add layer control for switching between map types
+        L.control.layers(baseLayers).addTo(this.map);
+
+        // Add scale control for measuring distances
+        L.control.scale().addTo(this.map);
 
         this.markersGroup = L.layerGroup().addTo(this.map);
     }
@@ -154,19 +192,62 @@ class NYCRealEstateDashboard {
 
     async loadDashboardData(days = 30) {
         try {
+            console.log(`🔄 Loading data for ${days} days...`);
             this.showLoading('Loading restaurant closure data...');
-            
-            // Call the Flask backend API
-            const response = await fetch(`/api/opportunities?days=${days}`);
-            const data = await response.json();
-            
+
+            // Try quick cache first, then fall back to full load
+            let data;
+            try {
+                console.log('🚀 Trying quick cache first...');
+                const quickResponse = await fetch(`${API_BASE_URL}/api/opportunities?days=${days}&quick=true`, {
+                    signal: AbortSignal.timeout(10000) // 10 second timeout for quick call
+                });
+
+                if (quickResponse.ok) {
+                    const quickData = await quickResponse.json();
+                    if (quickData.success && quickData.opportunities && quickData.opportunities.length > 0) {
+                        console.log('✅ Quick cache hit!');
+                        data = quickData;
+                    }
+                }
+            } catch (quickError) {
+                console.log('⚡ Quick cache miss, falling back to full load...');
+            }
+
+            // If no quick data, do full load with longer timeout
+            if (!data) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout for full load
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/opportunities?days=${days}&quick=false`, {
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    data = await response.json();
+                } catch (fetchError) {
+                    clearTimeout(timeoutId);
+                    throw fetchError;
+                }
+            }
+            console.log(`📊 Received ${data.opportunities?.length || 0} opportunities for ${days} days`);
+
             if (data.success && data.opportunities && data.opportunities.length > 0) {
                 this.deals = data.opportunities;
                 this.filteredDeals = [...this.deals];
-                
+                console.log(`✅ Updated deals array with ${this.deals.length} opportunities`);
+
+                // Apply default sorting by value (highest to lowest)
+                this.sortDeals('value');
+
                 this.updateStats(data.stats);
                 this.renderDeals();
-                this.updateMapMarkers();
+                this.updateRiskDashboard();
                 this.updateCharts();
             } else {
                 console.log('API returned empty data or failed:', data.message || 'No opportunities found');
@@ -176,7 +257,16 @@ class NYCRealEstateDashboard {
             this.hideLoading();
         } catch (error) {
             console.error('Error loading dashboard data:', error);
-            this.showError('Unable to connect to the health violations API. Please check that the backend server is running.');
+            console.error('Error details:', error.message, error.stack);
+
+            // Check if it's a timeout or network error
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                this.showError('Network error: Unable to connect to the backend server. Please check your internet connection.');
+            } else if (error.name === 'AbortError') {
+                this.showError('Request timed out. The server may be processing a large dataset. Please try again.');
+            } else {
+                this.showError(`API Error: ${error.message}. Please check the browser console for details.`);
+            }
             this.hideLoading();
         }
     }
@@ -195,13 +285,13 @@ class NYCRealEstateDashboard {
             this.updateLoadingStatus('Running ML predictions...');
             
             // Make actual API call to Python backend
-            const response = await fetch('/api/scan', {
+            const response = await fetch(`${API_BASE_URL}/api/scan`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     days: parseInt(days),
                     include_real_estate: true,
-                    include_owner_lookup: false
+                    include_owner_lookup: true
                 })
             });
             
@@ -211,10 +301,13 @@ class NYCRealEstateDashboard {
             if (data.success && data.opportunities && data.opportunities.length > 0) {
                 this.deals = data.opportunities;
                 this.filteredDeals = [...this.deals];
-                
+
+                // Apply default sorting by value (highest to lowest)
+                this.sortDeals('value');
+
                 this.updateStats(data.stats);
                 this.renderDeals();
-                this.updateMapMarkers();
+                this.updateRiskDashboard();
                 this.updateCharts();
                 
                 this.hideLoading();
@@ -324,7 +417,7 @@ class NYCRealEstateDashboard {
             return;
         }
 
-        dealsList.innerHTML = this.filteredDeals.slice(0, 10).map(deal => `
+        dealsList.innerHTML = this.filteredDeals.map(deal => `
             <div class="deal-card" onclick="dashboard.showPropertyDetails(${deal.id})">
                 <div class="deal-header">
                     <div class="deal-name">${deal.name}</div>
@@ -572,7 +665,7 @@ class NYCRealEstateDashboard {
         
         try {
             // Attempt to fetch real owner information
-            const response = await fetch('/api/property-owner', {
+            const response = await fetch(`${API_BASE_URL}/api/property-owner`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ address, borough })
@@ -675,7 +768,7 @@ class NYCRealEstateDashboard {
                 document.getElementById('progressBar').style.width = `${progress}%`;
                 
                 try {
-                    const response = await fetch('/api/property-owner', {
+                    const response = await fetch(`${API_BASE_URL}/api/property-owner`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ address: deal.address, borough: deal.borough })
@@ -779,9 +872,267 @@ class NYCRealEstateDashboard {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    showLoadingSkeleton() {
+        const dealsList = document.getElementById('dealsList');
+        dealsList.innerHTML = `
+            <div class="skeleton-container">
+                ${Array(6).fill(0).map(() => `
+                    <div class="skeleton-deal-card">
+                        <div class="skeleton-header">
+                            <div class="skeleton-name"></div>
+                            <div class="skeleton-value"></div>
+                        </div>
+                        <div class="skeleton-address"></div>
+                        <div class="skeleton-metrics">
+                            <div class="skeleton-metric"></div>
+                            <div class="skeleton-metric"></div>
+                            <div class="skeleton-metric"></div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
     toggleHeatmap() {
         // Placeholder for heatmap toggle functionality
         console.log('Heatmap toggle clicked');
+    }
+
+    // Value Distribution Methods
+    initializeRiskDashboard() {
+        this.initializeValuePieChart();
+
+        // Event listeners for export
+        document.getElementById('exportRiskData')?.addEventListener('click', () => {
+            this.exportRiskData();
+        });
+    }
+
+
+    initializeValuePieChart() {
+        const ctx = document.getElementById('valuePieChart');
+        if (!ctx) {
+            console.error('Cannot find valuePieChart canvas element');
+            return;
+        }
+
+        console.log('Initializing value histogram chart');
+
+        this.valuePieChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Number of Properties',
+                    data: [],
+                    backgroundColor: '#ffd700',
+                    borderColor: '#ffed4e',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: {
+                    duration: 1000
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Property Value Distribution ($50K Bins)',
+                        color: '#ffffff',
+                        font: {
+                            size: 14
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Property Value Range',
+                            color: '#ffffff'
+                        },
+                        ticks: {
+                            color: '#ffffff',
+                            maxRotation: 45
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Number of Properties',
+                            color: '#ffffff'
+                        },
+                        ticks: {
+                            color: '#ffffff',
+                            stepSize: 1
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+
+        console.log('Value histogram chart initialized successfully', this.valuePieChart);
+    }
+
+    updateRiskDashboard() {
+        if (!this.deals || this.deals.length === 0) return;
+
+        // Update the value distribution pie chart
+        this.updateValuePieChart();
+    }
+
+    updateValuePieChart() {
+        if (!this.valuePieChart || !this.deals) {
+            console.log('Cannot update value chart: chart or deals missing', {
+                hasChart: !!this.valuePieChart,
+                hasDeals: !!this.deals,
+                dealsLength: this.deals ? this.deals.length : 0
+            });
+            return;
+        }
+
+        console.log('Updating value histogram with', this.deals.length, 'deals');
+
+        // Create $50K bins for histogram
+        const binSize = 50000; // $50K bins
+        const values = this.deals.map(deal => deal.totalValue || 0);
+        const maxValue = Math.max(...values);
+        const minValue = Math.min(...values);
+        const numBins = Math.ceil(maxValue / binSize);
+
+        console.log('Histogram details:', {
+            binSize,
+            minValue,
+            maxValue,
+            numBins,
+            totalDeals: this.deals.length
+        });
+
+        // Initialize bins
+        const bins = {};
+        const labels = [];
+
+        for (let i = 0; i <= numBins; i++) {
+            const binStart = i * binSize;
+            const binEnd = (i + 1) * binSize;
+            const label = this.formatValueRange(binStart, binEnd);
+            labels.push(label);
+            bins[label] = 0;
+        }
+
+        // Categorize properties into $50K bins
+        this.deals.forEach(deal => {
+            const value = deal.totalValue || 0;
+            const binIndex = Math.floor(value / binSize);
+            const binStart = binIndex * binSize;
+            const binEnd = (binIndex + 1) * binSize;
+            const label = this.formatValueRange(binStart, binEnd);
+
+            if (bins[label] !== undefined) {
+                bins[label]++;
+            }
+        });
+
+        // Filter out empty bins for cleaner display
+        const nonEmptyLabels = [];
+        const nonEmptyData = [];
+
+        labels.forEach(label => {
+            if (bins[label] > 0) {
+                nonEmptyLabels.push(label);
+                nonEmptyData.push(bins[label]);
+            }
+        });
+
+        console.log('Histogram bins:', {
+            totalBins: labels.length,
+            nonEmptyBins: nonEmptyLabels.length,
+            labels: nonEmptyLabels,
+            data: nonEmptyData
+        });
+
+        // Update the histogram chart with new data
+        this.valuePieChart.data.labels = nonEmptyLabels;
+        this.valuePieChart.data.datasets[0].data = nonEmptyData;
+        this.valuePieChart.update('active');
+
+        // Force resize in case container size changed
+        setTimeout(() => {
+            if (this.valuePieChart) {
+                this.valuePieChart.resize();
+            }
+        }, 100);
+
+        console.log('Histogram updated successfully');
+    }
+
+    formatValueRange(start, end) {
+        // Format value ranges for display
+        const formatValue = (value) => {
+            if (value >= 1000000) {
+                return '$' + (value / 1000000).toFixed(1) + 'M';
+            } else if (value >= 1000) {
+                return '$' + (value / 1000).toFixed(0) + 'K';
+            } else {
+                return '$' + value.toLocaleString();
+            }
+        };
+
+        return formatValue(start) + ' - ' + formatValue(end);
+    }
+
+
+    toggleRiskView() {
+        console.log('Risk view toggled');
+    }
+
+    exportRiskData() {
+        if (!this.deals || this.deals.length === 0) {
+            alert('No data to export');
+            return;
+        }
+
+        // Create CSV data
+        const headers = ['Restaurant', 'Address', 'Borough', 'Violation Type', 'Date', 'Investment Value', 'Risk Score'];
+        const csvData = [headers];
+
+        this.deals.forEach(deal => {
+            csvData.push([
+                deal.name,
+                deal.address,
+                deal.borough,
+                deal.violationType,
+                deal.violationDate,
+                deal.totalValue,
+                deal.mlConfidence + '%'
+            ]);
+        });
+
+        // Convert to CSV string
+        const csvString = csvData.map(row => row.join(',')).join('\n');
+
+        // Download file
+        const blob = new Blob([csvString], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `nyc-violations-risk-data-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
     }
 }
 

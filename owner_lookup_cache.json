@@ -1,302 +1,362 @@
 {
-  "139 1 AVENUE|MANHATTAN": {
+  "133-30 39 AVENUE|QUEENS": {
     "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:39:15.369190",
-    "address": "139 1 AVENUE",
-    "borough": "MANHATTAN"
-  },
-  "88 DIVISION STREET|MANHATTAN": {
-    "owner": "BRIDGE REALTY COMPANY",
-    "timestamp": "2025-09-16T14:39:17.245333",
-    "address": "88 DIVISION STREET",
-    "borough": "MANHATTAN"
-  },
-  "5902 FORT HAMILTON PARKWAY|BROOKLYN": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:39:41.368893",
-    "address": "5902 FORT HAMILTON PARKWAY",
-    "borough": "BROOKLYN"
-  },
-  "4213 BROADWAY|QUEENS": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:40:02.068049",
-    "address": "4213 BROADWAY",
+    "timestamp": "2025-09-17T18:38:16.765035",
+    "address": "133-30 39 AVENUE",
     "borough": "QUEENS"
   },
-  "881 10 AVENUE|MANHATTAN": {
-    "owner": "881 10TH AVENUE",
-    "timestamp": "2025-09-16T14:40:08.987520",
-    "address": "881 10 AVENUE",
+  "139 1 AVENUE|MANHATTAN": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:21.390645",
+    "address": "139 1 AVENUE",
     "borough": "MANHATTAN"
   },
   "1862 NOSTRAND AVENUE|BROOKLYN": {
     "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:40:29.172680",
+    "timestamp": "2025-09-17T18:38:21.700097",
     "address": "1862 NOSTRAND AVENUE",
     "borough": "BROOKLYN"
   },
-  "59 4 AVENUE|MANHATTAN": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:40:42.300112",
-    "address": "59 4 AVENUE",
-    "borough": "MANHATTAN"
-  },
   "114 4 AVENUE|MANHATTAN": {
     "owner": "114 THIRD AVENUE, LLC",
-    "timestamp": "2025-09-16T14:40:57.606390",
+    "timestamp": "2025-09-17T18:38:22.508992",
     "address": "114 4 AVENUE",
     "borough": "MANHATTAN"
   },
-  "133-30 39 AVENUE|QUEENS": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:41:09.967017",
-    "address": "133-30 39 AVENUE",
-    "borough": "QUEENS"
-  },
-  "229 BROAD STREET|STATEN ISLAND": {
-    "owner": "HERE AND THERE REALTY",
-    "timestamp": "2025-09-16T14:41:13.441797",
-    "address": "229 BROAD STREET",
-    "borough": "STATEN ISLAND"
-  },
   "688 ALLERTON AVENUE|BRONX": {
     "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:41:14.342402",
+    "timestamp": "2025-09-17T18:38:23.172989",
     "address": "688 ALLERTON AVENUE",
     "borough": "BRONX"
   },
-  "3275 WESTCHESTER AVENUE|BRONX": {
+  "4213 BROADWAY|QUEENS": {
     "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:41:24.780072",
-    "address": "3275 WESTCHESTER AVENUE",
-    "borough": "BRONX"
-  },
-  "18304 HILLSIDE AVE|QUEENS": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:41:25.501023",
-    "address": "18304 HILLSIDE AVE",
+    "timestamp": "2025-09-17T18:38:23.317386",
+    "address": "4213 BROADWAY",
     "borough": "QUEENS"
-  },
-  "769 57 STREET|BROOKLYN": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:41:36.195870",
-    "address": "769 57 STREET",
-    "borough": "BROOKLYN"
   },
   "1280 AMSTERDAM AVENUE|MANHATTAN": {
     "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:41:37.918897",
+    "timestamp": "2025-09-17T18:38:23.882166",
     "address": "1280 AMSTERDAM AVENUE",
     "borough": "MANHATTAN"
   },
   "13335 ROOSEVELT AVE|QUEENS": {
     "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:41:48.284205",
+    "timestamp": "2025-09-17T18:38:24.369550",
     "address": "13335 ROOSEVELT AVE",
     "borough": "QUEENS"
   },
+  "5902 FORT HAMILTON PARKWAY|BROOKLYN": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:26.133284",
+    "address": "5902 FORT HAMILTON PARKWAY",
+    "borough": "BROOKLYN"
+  },
+  "881 10 AVENUE|MANHATTAN": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:26.135403",
+    "address": "881 10 AVENUE",
+    "borough": "MANHATTAN"
+  },
+  "88 DIVISION STREET|MANHATTAN": {
+    "owner": "BRIDGE REALTY COMPANY",
+    "timestamp": "2025-09-17T18:38:26.199465",
+    "address": "88 DIVISION STREET",
+    "borough": "MANHATTAN"
+  },
+  "59 4 AVENUE|MANHATTAN": {
+    "owner": "FOURTH AVE LOFT CORP",
+    "timestamp": "2025-09-17T18:38:26.245432",
+    "address": "59 4 AVENUE",
+    "borough": "MANHATTAN"
+  },
   "309 GRAHAM AVENUE|BROOKLYN": {
     "owner": "GRAHAM, YVONNE JOY",
-    "timestamp": "2025-09-16T14:41:48.801950",
+    "timestamp": "2025-09-17T18:38:26.574295",
     "address": "309 GRAHAM AVENUE",
     "borough": "BROOKLYN"
   },
-  "2914 36TH AVE|QUEENS": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:42:00.279809",
-    "address": "2914 36TH AVE",
-    "borough": "QUEENS"
-  },
-  "439 WEST  125 STREET|MANHATTAN": {
-    "owner": "439 WEST 125TH STREET",
-    "timestamp": "2025-09-16T14:42:01.465104",
-    "address": "439 WEST  125 STREET",
-    "borough": "MANHATTAN"
-  },
-  "980 MORRIS AVENUE|BRONX": {
-    "owner": "FILARDO, MARIA J",
-    "timestamp": "2025-09-16T14:42:07.015057",
-    "address": "980 MORRIS AVENUE",
-    "borough": "BRONX"
-  },
-  "804 GRAND STREET|BROOKLYN": {
-    "owner": "NAREM AWAD",
-    "timestamp": "2025-09-16T14:46:24.461813",
-    "address": "804 GRAND STREET",
-    "borough": "BROOKLYN"
-  },
-  "494 EAST  138 STREET|BRONX": {
-    "owner": "494 EAST 138TH STREET",
-    "timestamp": "2025-09-16T14:46:24.564882",
-    "address": "494 EAST  138 STREET",
-    "borough": "BRONX"
-  },
-  "4917 8 AVENUE|BROOKLYN": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:24.865386",
-    "address": "4917 8 AVENUE",
-    "borough": "BROOKLYN"
-  },
-  "13517 40 ROAD|QUEENS": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:24.962314",
-    "address": "13517 40 ROAD",
-    "borough": "QUEENS"
-  },
-  "2072 STEINWAY STREET|QUEENS": {
-    "owner": "2072 STEINWAY STREET",
-    "timestamp": "2025-09-16T14:46:25.023408",
-    "address": "2072 STEINWAY STREET",
-    "borough": "QUEENS"
-  },
-  "4119 BROADWAY|MANHATTAN": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:25.484730",
-    "address": "4119 BROADWAY",
-    "borough": "MANHATTAN"
-  },
   "13462 SPRINGFIELD BLVD|QUEENS": {
     "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:29.325045",
+    "timestamp": "2025-09-17T18:38:26.955256",
     "address": "13462 SPRINGFIELD BLVD",
     "borough": "QUEENS"
   },
-  "7215 18 AVENUE|BROOKLYN": {
+  "3275 WESTCHESTER AVENUE|BRONX": {
     "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:29.365074",
-    "address": "7215 18 AVENUE",
-    "borough": "BROOKLYN"
+    "timestamp": "2025-09-17T18:38:27.545827",
+    "address": "3275 WESTCHESTER AVENUE",
+    "borough": "BRONX"
   },
-  "5908A MAIN ST|QUEENS": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:29.700385",
-    "address": "5908A MAIN ST",
-    "borough": "QUEENS"
+  "980 MORRIS AVENUE|BRONX": {
+    "owner": "FILARDO, MARIA J",
+    "timestamp": "2025-09-17T18:38:27.674347",
+    "address": "980 MORRIS AVENUE",
+    "borough": "BRONX"
   },
   "21911 JAMAICA AVE|QUEENS": {
     "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:29.701699",
+    "timestamp": "2025-09-17T18:38:27.743505",
     "address": "21911 JAMAICA AVE",
     "borough": "QUEENS"
   },
-  "375 FLATBUSH AVENUE|BROOKLYN": {
+  "18304 HILLSIDE AVE|QUEENS": {
     "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:30.880335",
+    "timestamp": "2025-09-17T18:38:28.499992",
+    "address": "18304 HILLSIDE AVE",
+    "borough": "QUEENS"
+  },
+  "13517 40 ROAD|QUEENS": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:28.936120",
+    "address": "13517 40 ROAD",
+    "borough": "QUEENS"
+  },
+  "229 BROAD STREET|STATEN ISLAND": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:30.906048",
+    "address": "229 BROAD STREET",
+    "borough": "STATEN ISLAND"
+  },
+  "2914 36TH AVE|QUEENS": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:31.416308",
+    "address": "2914 36TH AVE",
+    "borough": "QUEENS"
+  },
+  "7215 18 AVENUE|BROOKLYN": {
+    "owner": "THE BEST 18, LLC",
+    "timestamp": "2025-09-17T18:38:31.803062",
+    "address": "7215 18 AVENUE",
+    "borough": "BROOKLYN"
+  },
+  "2072 STEINWAY STREET|QUEENS": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:33.034156",
+    "address": "2072 STEINWAY STREET",
+    "borough": "QUEENS"
+  },
+  "4917 8 AVENUE|BROOKLYN": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:33.064108",
+    "address": "4917 8 AVENUE",
+    "borough": "BROOKLYN"
+  },
+  "769 57 STREET|BROOKLYN": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:35.141138",
+    "address": "769 57 STREET",
+    "borough": "BROOKLYN"
+  },
+  "4119 BROADWAY|MANHATTAN": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:35.937060",
+    "address": "4119 BROADWAY",
+    "borough": "MANHATTAN"
+  },
+  "439 WEST  125 STREET|MANHATTAN": {
+    "owner": "439 WEST 125TH STREET",
+    "timestamp": "2025-09-17T18:38:36.670065",
+    "address": "439 WEST  125 STREET",
+    "borough": "MANHATTAN"
+  },
+  "5908A MAIN ST|QUEENS": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:37.036391",
+    "address": "5908A MAIN ST",
+    "borough": "QUEENS"
+  },
+  "664 LEXINGTON AVENUE|MANHATTAN": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:37.156346",
+    "address": "664 LEXINGTON AVENUE",
+    "borough": "MANHATTAN"
+  },
+  "494 EAST  138 STREET|BRONX": {
+    "owner": "494 EAST 138TH STREET",
+    "timestamp": "2025-09-17T18:38:37.262520",
+    "address": "494 EAST  138 STREET",
+    "borough": "BRONX"
+  },
+  "3737 JUNCTION BOULEVARD|QUEENS": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:37.696832",
+    "address": "3737 JUNCTION BOULEVARD",
+    "borough": "QUEENS"
+  },
+  "503 JACKSON AVENUE|BRONX": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:38.297498",
+    "address": "503 JACKSON AVENUE",
+    "borough": "BRONX"
+  },
+  "2962 FULTON STREET|BROOKLYN": {
+    "owner": "MWT 726 LLC",
+    "timestamp": "2025-09-17T18:38:38.324107",
+    "address": "2962 FULTON STREET",
+    "borough": "BROOKLYN"
+  },
+  "375 FLATBUSH AVENUE|BROOKLYN": {
+    "owner": "JJUR REALTY CORP",
+    "timestamp": "2025-09-17T18:38:38.359554",
     "address": "375 FLATBUSH AVENUE",
     "borough": "BROOKLYN"
   },
+  "287 HUDSON STREET|MANHATTAN": {
+    "owner": "287 HUDSON REALTY COR",
+    "timestamp": "2025-09-17T18:38:38.808680",
+    "address": "287 HUDSON STREET",
+    "borough": "MANHATTAN"
+  },
   "4404 AVENUE H|BROOKLYN": {
     "owner": "EARL FAMOUS INC.,",
-    "timestamp": "2025-09-16T14:46:30.953116",
+    "timestamp": "2025-09-17T18:38:39.051273",
     "address": "4404 AVENUE H",
     "borough": "BROOKLYN"
   },
   "992 CONEY ISLAND AVENUE|BROOKLYN": {
     "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:31.746625",
+    "timestamp": "2025-09-17T18:38:39.076356",
     "address": "992 CONEY ISLAND AVENUE",
     "borough": "BROOKLYN"
   },
-  "300 SCHERMERHORN STREET|BROOKLYN": {
-    "owner": "MEHTA FAMILY II, LLC",
-    "timestamp": "2025-09-16T14:46:34.979181",
-    "address": "300 SCHERMERHORN STREET",
-    "borough": "BROOKLYN"
-  },
-  "2962 FULTON STREET|BROOKLYN": {
-    "owner": "MWT 726 LLC",
-    "timestamp": "2025-09-16T14:46:35.052318",
-    "address": "2962 FULTON STREET",
-    "borough": "BROOKLYN"
-  },
-  "3154 STEINWAY ST|QUEENS": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:36.160152",
-    "address": "3154 STEINWAY ST",
-    "borough": "QUEENS"
-  },
-  "664 LEXINGTON AVENUE|MANHATTAN": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:36.351273",
-    "address": "664 LEXINGTON AVENUE",
-    "borough": "MANHATTAN"
-  },
-  "383 BEDFORD PARK BOULEVARD|BRONX": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:38.466188",
-    "address": "383 BEDFORD PARK BOULEVARD",
-    "borough": "BRONX"
-  },
-  "3737 JUNCTION BOULEVARD|QUEENS": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:39.022236",
-    "address": "3737 JUNCTION BOULEVARD",
-    "borough": "QUEENS"
-  },
-  "213 WEST   40 STREET|MANHATTAN": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:39.118606",
-    "address": "213 WEST   40 STREET",
-    "borough": "MANHATTAN"
-  },
-  "82 7 AVENUE|BROOKLYN": {
-    "owner": "ILIOPOULOS, GEORGE",
-    "timestamp": "2025-09-16T14:46:40.694351",
-    "address": "82 7 AVENUE",
-    "borough": "BROOKLYN"
-  },
-  "1416 CORTELYOU ROAD|BROOKLYN": {
-    "owner": "1416 CORTLEYOU ROAD,",
-    "timestamp": "2025-09-16T14:46:40.702029",
-    "address": "1416 CORTELYOU ROAD",
-    "borough": "BROOKLYN"
-  },
-  "503 JACKSON AVENUE|BRONX": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:41.175848",
-    "address": "503 JACKSON AVENUE",
-    "borough": "BRONX"
-  },
-  "3619 BROADWAY|QUEENS": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:42.011532",
-    "address": "3619 BROADWAY",
-    "borough": "QUEENS"
-  },
   "932 UTICA AVENUE|BROOKLYN": {
     "owner": "TADEUSZ BOBER",
-    "timestamp": "2025-09-16T14:46:42.203711",
+    "timestamp": "2025-09-17T18:38:39.144049",
     "address": "932 UTICA AVENUE",
     "borough": "BROOKLYN"
   },
+  "383 BEDFORD PARK BOULEVARD|BRONX": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:39.813226",
+    "address": "383 BEDFORD PARK BOULEVARD",
+    "borough": "BRONX"
+  },
   "11716 LIBERTY AVE|QUEENS": {
     "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:44.347301",
+    "timestamp": "2025-09-17T18:38:40.140059",
     "address": "11716 LIBERTY AVE",
-    "borough": "QUEENS"
-  },
-  "3503 BROADWAY|QUEENS": {
-    "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:45.012470",
-    "address": "3503 BROADWAY",
     "borough": "QUEENS"
   },
   "20520 JAMAICA AVE|QUEENS": {
     "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:46.175881",
+    "timestamp": "2025-09-17T18:38:40.488219",
     "address": "20520 JAMAICA AVE",
+    "borough": "QUEENS"
+  },
+  "3503 BROADWAY|QUEENS": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:40.958254",
+    "address": "3503 BROADWAY",
+    "borough": "QUEENS"
+  },
+  "82 7 AVENUE|BROOKLYN": {
+    "owner": "ILIOPOULOS, GEORGE",
+    "timestamp": "2025-09-17T18:38:41.621506",
+    "address": "82 7 AVENUE",
+    "borough": "BROOKLYN"
+  },
+  "300 SCHERMERHORN STREET|BROOKLYN": {
+    "owner": "MEHTA FAMILY II, LLC",
+    "timestamp": "2025-09-17T18:38:42.484044",
+    "address": "300 SCHERMERHORN STREET",
+    "borough": "BROOKLYN"
+  },
+  "11216 ROCKAWAY BEACH BLVD|QUEENS": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:43.002256",
+    "address": "11216 ROCKAWAY BEACH BLVD",
+    "borough": "QUEENS"
+  },
+  "804 GRAND STREET|BROOKLYN": {
+    "owner": "NAREM AWAD",
+    "timestamp": "2025-09-17T18:38:43.322258",
+    "address": "804 GRAND STREET",
+    "borough": "BROOKLYN"
+  },
+  "3410 STEINWAY ST|QUEENS": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:43.451490",
+    "address": "3410 STEINWAY ST",
     "borough": "QUEENS"
   },
   "1031 EAST   92 STREET|BROOKLYN": {
     "owner": "CALAMIA NUNZIO",
-    "timestamp": "2025-09-16T14:46:46.772381",
+    "timestamp": "2025-09-17T18:38:43.636401",
     "address": "1031 EAST   92 STREET",
     "borough": "BROOKLYN"
   },
+  "4283 MAIN ST|QUEENS": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:43.794491",
+    "address": "4283 MAIN ST",
+    "borough": "QUEENS"
+  },
+  "25917 HILLSIDE AVE|QUEENS": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-17T18:38:44.365079",
+    "address": "25917 HILLSIDE AVE",
+    "borough": "QUEENS"
+  },
+  "3154 STEINWAY ST|QUEENS": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-19T02:26:20.388088",
+    "address": "3154 STEINWAY ST",
+    "borough": "QUEENS"
+  },
+  "1416 CORTELYOU ROAD|BROOKLYN": {
+    "owner": "1416 CORTLEYOU ROAD,",
+    "timestamp": "2025-09-19T02:26:20.488254",
+    "address": "1416 CORTELYOU ROAD",
+    "borough": "BROOKLYN"
+  },
+  "3619 BROADWAY|QUEENS": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-19T02:26:21.559119",
+    "address": "3619 BROADWAY",
+    "borough": "QUEENS"
+  },
+  "213 WEST   40 STREET|MANHATTAN": {
+    "owner": "FUTURE 40TH STREET RE",
+    "timestamp": "2025-09-19T02:26:21.995271",
+    "address": "213 WEST   40 STREET",
+    "borough": "MANHATTAN"
+  },
   "101 WEST  136 STREET|MANHATTAN": {
     "owner": "Owner not found in public records",
-    "timestamp": "2025-09-16T14:46:46.891619",
+    "timestamp": "2025-09-19T02:26:23.483295",
     "address": "101 WEST  136 STREET",
+    "borough": "MANHATTAN"
+  },
+  "902 BROADWAY|BROOKLYN": {
+    "owner": "DELGADO, ELMA",
+    "timestamp": "2025-09-19T02:26:24.809084",
+    "address": "902 BROADWAY",
+    "borough": "BROOKLYN"
+  },
+  "67A ELDRIDGE ST|MANHATTAN": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-19T02:26:24.894831",
+    "address": "67A ELDRIDGE ST",
+    "borough": "MANHATTAN"
+  },
+  "181 EAST BROADWAY|MANHATTAN": {
+    "owner": "MDI REALTY INC",
+    "timestamp": "2025-09-19T02:26:24.973956",
+    "address": "181 EAST BROADWAY",
+    "borough": "MANHATTAN"
+  },
+  "1503 SHEEPSHEAD BAY ROAD|BROOKLYN": {
+    "owner": "LARKIN, THOMAS G",
+    "timestamp": "2025-09-19T02:26:25.059266",
+    "address": "1503 SHEEPSHEAD BAY ROAD",
+    "borough": "BROOKLYN"
+  },
+  "220 CANAL STREET|MANHATTAN": {
+    "owner": "Owner not found in public records",
+    "timestamp": "2025-09-19T02:26:26.581167",
+    "address": "220 CANAL STREET",
     "borough": "MANHATTAN"
   }
 }

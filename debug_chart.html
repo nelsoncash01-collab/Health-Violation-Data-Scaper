@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Histogram</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #1a1a1a; color: white; font-family: Arial, sans-serif; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .chart-container { background: #2a2a2a; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        canvas { background: rgba(255,255,255,0.1); }
+        .debug { background: #333; padding: 10px; margin: 10px 0; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Histogram Debug Test</h1>
+
+        <div class="debug">
+            <h3>Debug Info:</h3>
+            <div id="debugInfo">Loading...</div>
+        </div>
+
+        <div class="chart-container">
+            <h2>Property Value Histogram</h2>
+            <canvas id="debugChart" width="700" height="400"></canvas>
+        </div>
+
+        <button onclick="testChart()" style="padding: 10px 20px; margin: 10px; background: #ffd700; color: black; border: none; border-radius: 4px; cursor: pointer;">
+            🔄 Recreate Chart
+        </button>
+    </div>
+
+    <script>
+        let chart = null;
+        let apiData = null;
+
+        async function loadData() {
+            try {
+                console.log('🔄 Loading API data...');
+                const response = await fetch('/api/opportunities?days=30');
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.message || 'API failed');
+                }
+
+                apiData = data.opportunities;
+                console.log('✅ Loaded', apiData.length, 'opportunities');
+
+                document.getElementById('debugInfo').innerHTML =
+                    `✅ API Response: ${apiData.length} opportunities<br>` +
+                    `📊 Value range: $${Math.min(...apiData.map(d => d.totalValue)).toLocaleString()} - $${Math.max(...apiData.map(d => d.totalValue)).toLocaleString()}<br>` +
+                    `🎯 Chart.js version: ${Chart.version}`;
+
+                return true;
+            } catch (error) {
+                console.error('❌ Data loading failed:', error);
+                document.getElementById('debugInfo').innerHTML = `❌ Error: ${error.message}`;
+                return false;
+            }
+        }
+
+        function createHistogram() {
+            if (!apiData || apiData.length === 0) {
+                console.error('❌ No data available for chart');
+                return null;
+            }
+
+            console.log('📊 Creating histogram with', apiData.length, 'data points');
+
+            const binSize = 50000;
+            const values = apiData.map(d => d.totalValue);
+            const maxValue = Math.max(...values);
+
+            console.log('📈 Value range:', Math.min(...values), '-', maxValue);
+
+            // Create bins
+            const bins = {};
+            const labels = [];
+
+            const numBins = Math.ceil(maxValue / binSize);
+            for (let i = 0; i <= numBins; i++) {
+                const start = i * binSize;
+                const end = (i + 1) * binSize;
+                const label = formatRange(start, end);
+                labels.push(label);
+                bins[label] = 0;
+            }
+
+            // Fill bins
+            values.forEach(value => {
+                const binIndex = Math.floor(value / binSize);
+                const start = binIndex * binSize;
+                const end = (binIndex + 1) * binSize;
+                const label = formatRange(start, end);
+
+                if (bins[label] !== undefined) {
+                    bins[label]++;
+                }
+            });
+
+            // Filter non-empty bins
+            const nonEmptyLabels = [];
+            const nonEmptyData = [];
+
+            labels.forEach(label => {
+                if (bins[label] > 0) {
+                    nonEmptyLabels.push(label);
+                    nonEmptyData.push(bins[label]);
+                }
+            });
+
+            console.log('📊 Histogram bins:', nonEmptyLabels.length, 'non-empty bins');
+            console.log('📊 Data:', nonEmptyData);
+
+            const ctx = document.getElementById('debugChart');
+            if (!ctx) {
+                console.error('❌ Canvas element not found');
+                return null;
+            }
+
+            // Destroy existing chart
+            if (chart) {
+                chart.destroy();
+            }
+
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: nonEmptyLabels,
+                    datasets: [{
+                        label: 'Number of Properties',
+                        data: nonEmptyData,
+                        backgroundColor: '#ffd700',
+                        borderColor: '#ffed4e',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Property Value Distribution ($50K Bins)',
+                            color: '#ffffff',
+                            font: { size: 16 }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Property Value Range',
+                                color: '#ffffff'
+                            },
+                            ticks: {
+                                color: '#ffffff',
+                                maxRotation: 45
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Number of Properties',
+                                color: '#ffffff'
+                            },
+                            ticks: {
+                                color: '#ffffff',
+                                stepSize: 1
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            console.log('✅ Chart created:', chart);
+            return chart;
+        }
+
+        function formatRange(start, end) {
+            const format = (value) => {
+                if (value >= 1000000) {
+                    return '$' + (value / 1000000).toFixed(1) + 'M';
+                } else if (value >= 1000) {
+                    return '$' + (value / 1000).toFixed(0) + 'K';
+                } else {
+                    return '$' + value.toLocaleString();
+                }
+            };
+            return format(start) + ' - ' + format(end);
+        }
+
+        async function testChart() {
+            console.log('🔄 Testing chart creation...');
+
+            if (!apiData) {
+                const success = await loadData();
+                if (!success) return;
+            }
+
+            const result = createHistogram();
+
+            if (result) {
+                console.log('✅ Chart test successful');
+                document.getElementById('debugInfo').innerHTML += '<br>✅ Chart created successfully!';
+            } else {
+                console.log('❌ Chart test failed');
+                document.getElementById('debugInfo').innerHTML += '<br>❌ Chart creation failed!';
+            }
+        }
+
+        // Auto-load on page ready
+        window.addEventListener('load', async () => {
+            console.log('🚀 Page loaded, starting debug test...');
+            await testChart();
+        });
+    </script>
+</body>
+</html>

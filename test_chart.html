@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .chart-container {
+            width: 800px;
+            height: 400px;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Histogram Test</h1>
+    <div class="chart-container">
+        <canvas id="valuePieChart" width="800" height="400"></canvas>
+    </div>
+
+    <script>
+        // Test data similar to what we have
+        const testData = [
+            { totalValue: 700000 },
+            { totalValue: 750000 },
+            { totalValue: 1200000 },
+            { totalValue: 1250000 },
+            { totalValue: 1300000 },
+            { totalValue: 1400000 },
+            { totalValue: 1450000 },
+            { totalValue: 1600000 }
+        ];
+
+        function formatValueRange(start, end) {
+            const formatValue = (value) => {
+                if (value >= 1000000) {
+                    return '$' + (value / 1000000).toFixed(1) + 'M';
+                } else if (value >= 1000) {
+                    return '$' + (value / 1000).toFixed(0) + 'K';
+                } else {
+                    return '$' + value.toLocaleString();
+                }
+            };
+            return formatValue(start) + ' - ' + formatValue(end);
+        }
+
+        function createHistogram() {
+            const ctx = document.getElementById('valuePieChart');
+            if (!ctx) {
+                console.error('Canvas not found');
+                return;
+            }
+
+            console.log('Creating test histogram...');
+
+            const binSize = 50000;
+            const values = testData.map(d => d.totalValue);
+            const maxValue = Math.max(...values);
+            const numBins = Math.ceil(maxValue / binSize);
+
+            console.log('Test data:', { values, maxValue, numBins });
+
+            // Create bins
+            const bins = {};
+            const labels = [];
+
+            for (let i = 0; i <= numBins; i++) {
+                const binStart = i * binSize;
+                const binEnd = (i + 1) * binSize;
+                const label = formatValueRange(binStart, binEnd);
+                labels.push(label);
+                bins[label] = 0;
+            }
+
+            // Fill bins
+            testData.forEach(deal => {
+                const value = deal.totalValue;
+                const binIndex = Math.floor(value / binSize);
+                const binStart = binIndex * binSize;
+                const binEnd = (binIndex + 1) * binSize;
+                const label = formatValueRange(binStart, binEnd);
+
+                if (bins[label] !== undefined) {
+                    bins[label]++;
+                }
+            });
+
+            // Filter non-empty bins
+            const nonEmptyLabels = [];
+            const nonEmptyData = [];
+
+            labels.forEach(label => {
+                if (bins[label] > 0) {
+                    nonEmptyLabels.push(label);
+                    nonEmptyData.push(bins[label]);
+                }
+            });
+
+            console.log('Histogram data:', { nonEmptyLabels, nonEmptyData });
+
+            // Create chart
+            const chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: nonEmptyLabels,
+                    datasets: [{
+                        label: 'Number of Properties',
+                        data: nonEmptyData,
+                        backgroundColor: '#ffd700',
+                        borderColor: '#ffed4e',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Property Value Distribution ($50K Bins)',
+                            color: '#ffffff',
+                            font: { size: 16 }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Property Value Range',
+                                color: '#ffffff'
+                            },
+                            ticks: {
+                                color: '#ffffff',
+                                maxRotation: 45
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Number of Properties',
+                                color: '#ffffff'
+                            },
+                            ticks: {
+                                color: '#ffffff',
+                                stepSize: 1
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            console.log('Chart created successfully:', chart);
+        }
+
+        // Create chart when page loads
+        window.addEventListener('load', createHistogram);
+    </script>
+</body>
+</html>
