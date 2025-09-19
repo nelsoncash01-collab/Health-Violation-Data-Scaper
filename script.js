@@ -23,9 +23,40 @@ class NYCRealEstateDashboard {
         this.initializeRiskDashboard();
         this.initializeCharts();
         this.initializeTabs();
-        
+
+        // Generate some mock data immediately for testing histogram
+        this.generateMockDataForHistogram();
+
         // Load initial data
         await this.loadDashboardData();
+    }
+
+    generateMockDataForHistogram() {
+        // Generate mock data with $50K intervals for immediate histogram display
+        const mockDeals = [];
+        const bins = [100000, 150000, 250000, 350000, 500000, 750000, 1000000, 1500000, 2000000];
+
+        bins.forEach((value, index) => {
+            mockDeals.push({
+                id: index + 1000,
+                name: `Mock Property ${index + 1}`,
+                totalValue: value + Math.random() * 50000,
+                borough: 'Manhattan',
+                neighborhood: 'Test Area',
+                mlConfidence: 85 + Math.random() * 10
+            });
+        });
+
+        if (!this.deals || this.deals.length === 0) {
+            this.deals = mockDeals;
+            this.filteredDeals = [...this.deals];
+            console.log('Generated mock data for histogram testing:', this.deals.length, 'properties');
+
+            // Update histogram immediately
+            setTimeout(() => {
+                this.updateRiskDashboard();
+            }, 500);
+        }
     }
 
     initializeEventListeners() {
@@ -865,42 +896,85 @@ class NYCRealEstateDashboard {
 
     initializeValuePieChart() {
         const ctx = document.getElementById('valuePieChart');
-        if (!ctx) return;
+        if (!ctx) {
+            console.error('Cannot find valuePieChart canvas element');
+            return;
+        }
+
+        // Wait for Chart.js to load if not available yet
+        if (typeof Chart === 'undefined') {
+            console.log('Chart.js not loaded yet, retrying in 100ms...');
+            setTimeout(() => this.initializeValuePieChart(), 100);
+            return;
+        }
+
+        console.log('Initializing value histogram chart with $50K bins');
 
         this.valuePieChart = new Chart(ctx, {
-            type: 'pie',
+            type: 'bar',
             data: {
-                labels: ['Under $500K', '$500K - $1M', '$1M - $2M', '$2M - $5M', 'Over $5M'],
+                labels: [],
                 datasets: [{
-                    data: [0, 0, 0, 0, 0],
-                    backgroundColor: [
-                        '#28a745',  // Green for under $500K
-                        '#ffc107',  // Yellow for $500K-$1M
-                        '#fd7e14',  // Orange for $1M-$2M
-                        '#dc3545',  // Red for $2M-$5M
-                        '#6f42c1'   // Purple for over $5M
-                    ],
-                    borderWidth: 2,
-                    borderColor: '#fff'
+                    label: 'Number of Properties',
+                    data: [],
+                    backgroundColor: '#ffd700',
+                    borderColor: '#ffed4e',
+                    borderWidth: 1
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                animation: {
+                    duration: 1000
+                },
                 plugins: {
                     legend: {
-                        position: 'bottom',
-                        labels: {
-                            padding: 15,
-                            fontSize: 12
-                        }
+                        display: false
                     },
                     title: {
-                        display: false
+                        display: true,
+                        text: 'Property Value Distribution ($50K Bins)',
+                        color: '#ffffff',
+                        font: {
+                            size: 14
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Property Value Range',
+                            color: '#ffffff'
+                        },
+                        ticks: {
+                            color: '#ffffff',
+                            maxRotation: 45
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Number of Properties',
+                            color: '#ffffff'
+                        },
+                        ticks: {
+                            color: '#ffffff',
+                            stepSize: 1
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
                     }
                 }
             }
         });
+
+        console.log('Value histogram chart initialized successfully', this.valuePieChart);
     }
 
     updateRiskDashboard() {
@@ -911,35 +985,110 @@ class NYCRealEstateDashboard {
     }
 
     updateValuePieChart() {
-        if (!this.valuePieChart || !this.deals) return;
+        if (!this.valuePieChart || !this.deals) {
+            console.log('Cannot update value chart: chart or deals missing', {
+                hasChart: !!this.valuePieChart,
+                hasDeals: !!this.deals,
+                dealsLength: this.deals ? this.deals.length : 0
+            });
+            return;
+        }
 
-        // Categorize properties by value
-        const valueRanges = {
-            'Under $500K': 0,
-            '$500K - $1M': 0,
-            '$1M - $2M': 0,
-            '$2M - $5M': 0,
-            'Over $5M': 0
-        };
+        console.log('Updating value histogram with', this.deals.length, 'deals');
 
+        // Create $50K bins for histogram
+        const binSize = 50000; // $50K bins as requested
+        const values = this.deals.map(deal => deal.totalValue || 0);
+
+        if (values.length === 0) {
+            console.log('No values to display in histogram');
+            return;
+        }
+
+        const maxValue = Math.max(...values);
+        const minValue = Math.min(...values);
+        const numBins = Math.ceil(maxValue / binSize);
+
+        console.log('Histogram details:', {
+            binSize,
+            minValue,
+            maxValue,
+            numBins,
+            totalDeals: this.deals.length
+        });
+
+        // Initialize bins
+        const bins = {};
+        const labels = [];
+
+        for (let i = 0; i <= numBins; i++) {
+            const binStart = i * binSize;
+            const binEnd = (i + 1) * binSize;
+            const label = this.formatValueRange(binStart, binEnd);
+            labels.push(label);
+            bins[label] = 0;
+        }
+
+        // Categorize properties into $50K bins
         this.deals.forEach(deal => {
             const value = deal.totalValue || 0;
-            if (value < 500000) {
-                valueRanges['Under $500K']++;
-            } else if (value < 1000000) {
-                valueRanges['$500K - $1M']++;
-            } else if (value < 2000000) {
-                valueRanges['$1M - $2M']++;
-            } else if (value < 5000000) {
-                valueRanges['$2M - $5M']++;
-            } else {
-                valueRanges['Over $5M']++;
+            const binIndex = Math.floor(value / binSize);
+            const binStart = binIndex * binSize;
+            const binEnd = (binIndex + 1) * binSize;
+            const label = this.formatValueRange(binStart, binEnd);
+
+            if (bins[label] !== undefined) {
+                bins[label]++;
             }
         });
 
-        // Update the pie chart with new data
-        this.valuePieChart.data.datasets[0].data = Object.values(valueRanges);
-        this.valuePieChart.update();
+        // Filter out empty bins for cleaner display
+        const nonEmptyLabels = [];
+        const nonEmptyData = [];
+
+        labels.forEach(label => {
+            if (bins[label] > 0) {
+                nonEmptyLabels.push(label);
+                nonEmptyData.push(bins[label]);
+            }
+        });
+
+        console.log('Histogram bins:', {
+            totalBins: labels.length,
+            nonEmptyBins: nonEmptyLabels.length,
+            labels: nonEmptyLabels,
+            data: nonEmptyData
+        });
+
+        // Update the histogram chart with new data
+        this.valuePieChart.data.labels = nonEmptyLabels;
+        this.valuePieChart.data.datasets[0].data = nonEmptyData;
+        this.valuePieChart.update('active');
+
+        // Force resize and ensure visibility
+        setTimeout(() => {
+            if (this.valuePieChart) {
+                this.valuePieChart.resize();
+                console.log('Histogram resize completed - chart should now be visible');
+            }
+        }, 100);
+
+        console.log('Histogram updated successfully with', nonEmptyData.length, 'bins');
+    }
+
+    formatValueRange(start, end) {
+        // Format value ranges for display
+        const formatValue = (value) => {
+            if (value >= 1000000) {
+                return '$' + (value / 1000000).toFixed(1) + 'M';
+            } else if (value >= 1000) {
+                return '$' + (value / 1000).toFixed(0) + 'K';
+            } else {
+                return '$' + value.toLocaleString();
+            }
+        };
+
+        return formatValue(start) + ' - ' + formatValue(end);
     }
 
 
