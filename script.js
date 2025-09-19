@@ -19,45 +19,60 @@ class NYCRealEstateDashboard {
     }
 
     async init() {
+        // Show skeleton UI immediately
+        this.showInitialSkeletonUI();
+
+        // Initialize core functionality first
         this.initializeEventListeners();
-        this.initializeRiskDashboard();
-        this.initializeCharts();
         this.initializeTabs();
 
-        // Generate some mock data immediately for testing histogram
-        this.generateMockDataForHistogram();
+        // Skip mock data generation - load real data instead
 
-        // Load initial data
-        await this.loadDashboardData();
+        // Initialize charts and dashboard after DOM is ready
+        setTimeout(() => {
+            this.initializeRiskDashboard();
+            this.initializeCharts();
+        }, 100);
+
+        // Load real data in background (non-blocking)
+        this.loadDashboardDataAsync();
     }
 
-    generateMockDataForHistogram() {
-        // Generate mock data with $50K intervals for immediate histogram display
-        const mockDeals = [];
-        const bins = [100000, 150000, 250000, 350000, 500000, 750000, 1000000, 1500000, 2000000];
+    showInitialSkeletonUI() {
+        // Show skeleton loading for all cards immediately
+        this.showLoadingSkeleton();
 
-        bins.forEach((value, index) => {
-            mockDeals.push({
-                id: index + 1000,
-                name: `Mock Property ${index + 1}`,
-                totalValue: value + Math.random() * 50000,
-                borough: 'Manhattan',
-                neighborhood: 'Test Area',
-                mlConfidence: 85 + Math.random() * 10
-            });
-        });
+        // Update stats with placeholder values
+        document.getElementById('newOpportunities').textContent = '...';
+        document.getElementById('avgValue').textContent = 'Loading...';
+        document.getElementById('neighborhoods').textContent = '...';
+        document.getElementById('mlAccuracy').textContent = '...%';
+    }
 
-        if (!this.deals || this.deals.length === 0) {
-            this.deals = mockDeals;
-            this.filteredDeals = [...this.deals];
-            console.log('Generated mock data for histogram testing:', this.deals.length, 'properties');
+    async loadDashboardDataAsync() {
+        // Load data without blocking the UI
+        try {
+            // First try to show cached/quick data
+            this.showQuickData();
 
-            // Update histogram immediately
-            setTimeout(() => {
-                this.updateRiskDashboard();
-            }, 500);
+            // Then load full data in background
+            await this.loadDashboardData();
+        } catch (error) {
+            console.log('Background data loading failed, using mock data');
+            // Keep showing mock data if API fails
         }
     }
+
+    showQuickData() {
+        // Show immediate content to make the site feel responsive
+        if (this.deals && this.deals.length > 0) {
+            this.updateStats();
+            this.renderDeals();
+            this.updateRiskDashboard();
+            this.updateCharts();
+        }
+    }
+
 
     initializeEventListeners() {
         // Scan button
@@ -221,25 +236,45 @@ class NYCRealEstateDashboard {
             console.log(`🔄 Loading data for ${days} days...`);
             this.showLoading('Loading restaurant closure data...');
 
-            // Call the Flask backend API with timeout for parallel processing
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minute timeout
-
+            // Try quick cached data first with short timeout
             let data;
             try {
-                const response = await fetch(`${API_BASE_URL}/api/opportunities?days=${days}&quick=false`, {
-                    signal: controller.signal
+                console.log('🚀 Trying quick cache first...');
+                const quickResponse = await fetch(`${API_BASE_URL}/api/opportunities?days=${days}&quick=true`, {
+                    signal: AbortSignal.timeout(5000) // 5 second timeout for quick call
                 });
-                clearTimeout(timeoutId);
 
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                if (quickResponse.ok) {
+                    const quickData = await quickResponse.json();
+                    if (quickData.success && quickData.opportunities && quickData.opportunities.length > 0) {
+                        console.log('✅ Quick cache hit!');
+                        data = quickData;
+                    }
                 }
+            } catch (quickError) {
+                console.log('⚡ Quick cache miss, trying full load...');
+            }
 
-                data = await response.json();
-            } catch (fetchError) {
-                clearTimeout(timeoutId);
-                throw fetchError;
+            // If no quick data, try full load with shorter timeout
+            if (!data) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // Reduced to 30 seconds
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/api/opportunities?days=${days}&quick=false`, {
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    data = await response.json();
+                } catch (fetchError) {
+                    clearTimeout(timeoutId);
+                    throw fetchError;
+                }
             }
             console.log(`📊 Received ${data.opportunities?.length || 0} opportunities for ${days} days`);
 

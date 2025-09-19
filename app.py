@@ -14,9 +14,17 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score, mean_squared_error
 import concurrent.futures
 import threading
+import schedule
+import time
+from datetime import timezone
+import pytz
 
 app = Flask(__name__)
 CORS(app)
+
+# Global variable for scheduled data updates
+background_scheduler = None
+scraper_instance = None
 
 class NYCRealEstatePricePredictor:
     def __init__(self):
@@ -506,189 +514,81 @@ class NYCRealEstatePricePredictor:
         return address.strip()
 
     def _geocode_with_pattern_matching(self, address, borough=None):
-        """Enhanced pattern matching geocoding for NYC addresses"""
+        """EXACT Colab geocoding logic - neighborhood keyword matching"""
         address_lower = address.lower()
         borough_lower = borough.lower() if borough else ""
 
+        # Combine address and borough for pattern matching
+        full_context = f"{address_lower} {borough_lower}".strip()
+
         import re
+        number_match = re.search(r'\b(\d+)\b', address)
+        base_number = int(number_match.group(1)) if number_match else 100
 
-        # Extract house number
-        number_match = re.search(r'^(\d+)', address)
-        house_number = int(number_match.group(1)) if number_match else 100
+        # EXACT Colab geocoding logic - neighborhood keyword matching
+        # Check specific street patterns first to avoid conflicts
+        if any(term in address_lower for term in ['fordham', 'jerome', 'grand concourse']) and 'bronx' in full_context:
+            return {"lat": 40.8621 + (base_number % 50) * 0.0001, "lng": -73.8965}
+        elif any(term in address_lower for term in ['tribeca', 'chambers', 'franklin']):
+            return {"lat": 40.7195 + (base_number % 50) * 0.0001, "lng": -74.0089}
+        elif any(term in address_lower for term in ['soho', 'spring', 'broome', 'grand']) and 'manhattan' in full_context:
+            return {"lat": 40.7230 + (base_number % 50) * 0.0001, "lng": -74.0020}
+        elif any(term in address_lower for term in ['west village', 'bleecker', 'christopher', 'hudson st']):
+            return {"lat": 40.7357 + (base_number % 50) * 0.0001, "lng": -74.0036}
+        elif any(term in address_lower for term in ['east village', 'st marks', 'avenue a', 'avenue b']):
+            return {"lat": 40.7264 + (base_number % 50) * 0.0001, "lng": -73.9816}
+        elif any(term in address_lower for term in ['chelsea', '23rd', '24th', '25th', 'eighth ave', '10th avenue', '10 avenue', 'tenth avenue']):
+            return {"lat": 40.7465 + (base_number % 50) * 0.0001, "lng": -73.9972}
+        elif any(term in address_lower for term in ['upper east', 'lexington', 'park ave', 'madison ave']):
+            return {"lat": 40.7736 + (base_number % 100) * 0.0001, "lng": -73.9566}
+        elif any(term in address_lower for term in ['upper west', 'columbus', 'amsterdam']) and 'manhattan' in full_context:
+            return {"lat": 40.7851 + (base_number % 100) * 0.0001, "lng": -73.9754}
+        elif any(term in address_lower for term in ['financial', 'wall', 'water st', 'pearl st']):
+            return {"lat": 40.7074 + (base_number % 50) * 0.0001, "lng": -74.0113}
+        elif any(term in address_lower for term in ['midtown', 'times square', '42nd', '34th']):
+            return {"lat": 40.7549 + (base_number % 50) * 0.0001, "lng": -73.9707}
+        elif any(term in address_lower for term in ['harlem', '125th', 'lenox', 'malcolm x']):
+            return {"lat": 40.8176 + (base_number % 50) * 0.0001, "lng": -73.9482}
+        elif any(term in address_lower for term in ['dumbo', 'jay', 'front st', 'water st']) and 'brooklyn' in full_context:
+            return {"lat": 40.7033 + (base_number % 30) * 0.0001, "lng": -73.9903}
+        elif any(term in address_lower for term in ['park slope', 'prospect', 'seventh ave']) and 'brooklyn' in full_context:
+            return {"lat": 40.6719 + (base_number % 50) * 0.0001, "lng": -73.9832}
+        elif any(term in address_lower for term in ['williamsburg', 'bedford', 'berry', 'wythe']) and 'brooklyn' in full_context:
+            return {"lat": 40.7081 + (base_number % 50) * 0.0001, "lng": -73.9571}
+        elif any(term in address_lower for term in ['brooklyn heights', 'remsen', 'montague', 'atlantic']):
+            return {"lat": 40.6958 + (base_number % 30) * 0.0001, "lng": -73.9936}
+        elif any(term in address_lower for term in ['bed-stuy', 'bedford-stuyvesant', 'fulton']) and 'brooklyn' in full_context:
+            return {"lat": 40.6845 + (base_number % 50) * 0.0001, "lng": -73.9442}
+        elif any(term in address_lower for term in ['long island city', 'lic', 'queens plaza']):
+            return {"lat": 40.7444 + (base_number % 30) * 0.0001, "lng": -73.9482}
+        elif any(term in address_lower for term in ['astoria', 'ditmars', 'steinway']):
+            return {"lat": 40.7720 + (base_number % 50) * 0.0001, "lng": -73.9300}
+        elif any(term in address_lower for term in ['jackson heights', 'northern blvd', 'roosevelt']):
+            return {"lat": 40.7527 + (base_number % 50) * 0.0001, "lng": -73.8826}
+        elif any(term in address_lower for term in ['flushing', 'main st']) and 'queens' in full_context:
+            return {"lat": 40.7677 + (base_number % 50) * 0.0001, "lng": -73.8334}
+        elif any(term in address_lower for term in ['riverdale']) and 'bronx' in full_context:
+            return {"lat": 40.8944 + (base_number % 30) * 0.0001, "lng": -73.9064}
+        # Special case for Broadway - prioritize Financial District if lower numbers
+        elif 'broadway' in address_lower and 'manhattan' in full_context:
+            if base_number < 200:  # Lower Broadway is Financial District
+                return {"lat": 40.7074 + (base_number % 50) * 0.0001, "lng": -74.0113}
+            else:  # Higher Broadway could be Midtown/Upper West
+                return {"lat": 40.7549 + (base_number % 100) * 0.0001, "lng": -73.9707}
+        # Borough-based fallbacks
+        elif 'brooklyn' in full_context:
+            return {"lat": 40.6719 + (base_number % 100) * 0.0001, "lng": -73.9832}
+        elif 'queens' in full_context:
+            return {"lat": 40.7444 + (base_number % 100) * 0.0001, "lng": -73.9482}
+        elif 'bronx' in full_context:
+            return {"lat": 40.8267 + (base_number % 100) * 0.0001, "lng": -73.9064}
+        elif 'staten island' in full_context:
+            return {"lat": 40.6436 + (base_number % 50) * 0.0001, "lng": -74.0776}
+        elif 'manhattan' in full_context:
+            return {"lat": 40.7549 + (base_number % 100) * 0.0001, "lng": -73.9707}
 
-        # Extract street name
-        street_match = re.search(r'\d+\s+(.+)', address)
-        street_name = street_match.group(1).lower() if street_match else address_lower
-
-        # Calculate coordinate offset based on house number (more realistic distribution)
-        lat_offset = (house_number % 100) * 0.0001
-        lng_offset = ((house_number % 50) - 25) * 0.0001
-
-        # Manhattan street-specific geocoding
-        if 'manhattan' in borough_lower or any(term in address_lower for term in ['manhattan', 'new york']):
-            # Major Manhattan streets with accurate coordinates
-            manhattan_streets = {
-                'broadway': {"base_lat": 40.7831, "base_lng": -73.9712, "direction": "ns"},
-                'fifth avenue': {"base_lat": 40.7781, "base_lng": -73.9665, "direction": "ns"},
-                '5th avenue': {"base_lat": 40.7781, "base_lng": -73.9665, "direction": "ns"},
-                'park avenue': {"base_lat": 40.7731, "base_lng": -73.9712, "direction": "ns"},
-                'madison avenue': {"base_lat": 40.7731, "base_lng": -73.9712, "direction": "ns"},
-                'lexington avenue': {"base_lat": 40.7631, "base_lng": -73.9665, "direction": "ns"},
-                'third avenue': {"base_lat": 40.7531, "base_lng": -73.9665, "direction": "ns"},
-                '3rd avenue': {"base_lat": 40.7531, "base_lng": -73.9665, "direction": "ns"},
-                'second avenue': {"base_lat": 40.7431, "base_lng": -73.9865, "direction": "ns"},
-                '2nd avenue': {"base_lat": 40.7431, "base_lng": -73.9865, "direction": "ns"},
-                'first avenue': {"base_lat": 40.7331, "base_lng": -73.9765, "direction": "ns"},
-                '1st avenue': {"base_lat": 40.7331, "base_lng": -73.9765, "direction": "ns"},
-                'avenue a': {"base_lat": 40.7231, "base_lng": -73.9865, "direction": "ns"},
-                'avenue b': {"base_lat": 40.7131, "base_lng": -73.9765, "direction": "ns"},
-                'west 14th street': {"base_lat": 40.7390, "base_lng": -74.0059, "direction": "ew"},
-                'west 23rd street': {"base_lat": 40.7440, "base_lng": -74.0020, "direction": "ew"},
-                'west 34th street': {"base_lat": 40.7505, "base_lng": -73.9934, "direction": "ew"},
-                'west 42nd street': {"base_lat": 40.7580, "base_lng": -73.9855, "direction": "ew"},
-                'west 57th street': {"base_lat": 40.7649, "base_lng": -73.9776, "direction": "ew"},
-                'east 14th street': {"base_lat": 40.7331, "base_lng": -73.9899, "direction": "ew"},
-                'east 23rd street': {"base_lat": 40.7394, "base_lng": -73.9857, "direction": "ew"},
-                'east 34th street': {"base_lat": 40.7462, "base_lng": -73.9820, "direction": "ew"},
-                'east 42nd street': {"base_lat": 40.7527, "base_lng": -73.9772, "direction": "ew"},
-                'east 57th street': {"base_lat": 40.7614, "base_lng": -73.9776, "direction": "ew"},
-                'wall street': {"base_lat": 40.7074, "base_lng": -74.0113, "direction": "ew"},
-                'canal street': {"base_lat": 40.7185, "base_lng": -74.0051, "direction": "ew"},
-                'houston street': {"base_lat": 40.7253, "base_lng": -74.0034, "direction": "ew"},
-                'delancey street': {"base_lat": 40.7184, "base_lng": -73.9857, "direction": "ew"},
-                'grand street': {"base_lat": 40.7185, "base_lng": -73.9935, "direction": "ew"},
-                'spring street': {"base_lat": 40.7253, "base_lng": -74.0034, "direction": "ew"},
-                'bleecker street': {"base_lat": 40.7279, "base_lng": -74.0021, "direction": "ew"},
-                '8th avenue': {"base_lat": 40.7505, "base_lng": -73.9934, "direction": "ns"},
-                '7th avenue': {"base_lat": 40.7505, "base_lng": -73.9880, "direction": "ns"},
-                '6th avenue': {"base_lat": 40.7505, "base_lng": -73.9825, "direction": "ns"},
-            }
-
-            # Find matching street
-            for street_key, coords in manhattan_streets.items():
-                if street_key in street_name:
-                    base_lat = coords["base_lat"]
-                    base_lng = coords["base_lng"]
-
-                    # Adjust coordinates based on house number and street direction
-                    if coords["direction"] == "ns":  # North-South street
-                        # Higher numbers = further north
-                        lat = base_lat + (house_number - 100) * 0.00008
-                        lng = base_lng + lng_offset * 0.5
-                    else:  # East-West street
-                        # Higher numbers = further east (for east streets) or west (for west streets)
-                        lat = base_lat + lat_offset * 0.5
-                        if 'west' in street_name:
-                            lng = base_lng - (house_number - 100) * 0.00005
-                        else:
-                            lng = base_lng + (house_number - 100) * 0.00005
-
-                    return {"lat": lat, "lng": lng}
-
-            # Manhattan neighborhood fallbacks
-            manhattan_neighborhoods = {
-                'tribeca': {"lat": 40.7195, "lng": -74.0089},
-                'soho': {"lat": 40.7230, "lng": -74.0020},
-                'financial': {"lat": 40.7074, "lng": -74.0113},
-                'midtown': {"lat": 40.7549, "lng": -73.9840},
-                'times square': {"lat": 40.7580, "lng": -73.9855},
-                'chelsea': {"lat": 40.7465, "lng": -73.9972},
-                'village': {"lat": 40.7308, "lng": -74.0020},
-                'upper east': {"lat": 40.7736, "lng": -73.9566},
-                'upper west': {"lat": 40.7851, "lng": -73.9754},
-                'harlem': {"lat": 40.8176, "lng": -73.9482},
-                'chinatown': {"lat": 40.7156, "lng": -73.9970}
-            }
-
-            for neighborhood, coords in manhattan_neighborhoods.items():
-                if neighborhood in address_lower:
-                    return {
-                        "lat": coords["lat"] + lat_offset,
-                        "lng": coords["lng"] + lng_offset
-                    }
-
-            # Default Manhattan
-            return {"lat": 40.7549 + lat_offset, "lng": -73.9707 + lng_offset}
-
-        # Brooklyn geocoding
-        elif 'brooklyn' in borough_lower:
-            brooklyn_areas = {
-                'dumbo': {"lat": 40.7033, "lng": -73.9903},
-                'williamsburg': {"lat": 40.7081, "lng": -73.9571},
-                'park slope': {"lat": 40.6719, "lng": -73.9832},
-                'brooklyn heights': {"lat": 40.6958, "lng": -73.9936},
-                'bed-stuy': {"lat": 40.6845, "lng": -73.9442},
-                'bedford': {"lat": 40.6845, "lng": -73.9442},
-                'crown heights': {"lat": 40.6678, "lng": -73.9442},
-                'sunset park': {"lat": 40.6563, "lng": -74.0176},
-                'bay ridge': {"lat": 40.6350, "lng": -74.0290},
-                'coney island': {"lat": 40.5755, "lng": -73.9707},
-                'flatbush': {"lat": 40.6501, "lng": -73.9662},
-                'bushwick': {"lat": 40.6942, "lng": -73.9194}
-            }
-
-            for area, coords in brooklyn_areas.items():
-                if area in address_lower:
-                    return {
-                        "lat": coords["lat"] + lat_offset,
-                        "lng": coords["lng"] + lng_offset
-                    }
-
-            # Default Brooklyn
-            return {"lat": 40.6719 + lat_offset, "lng": -73.9832 + lng_offset}
-
-        # Queens geocoding
-        elif 'queens' in borough_lower:
-            queens_areas = {
-                'long island city': {"lat": 40.7444, "lng": -73.9482},
-                'lic': {"lat": 40.7444, "lng": -73.9482},
-                'astoria': {"lat": 40.7720, "lng": -73.9300},
-                'jackson heights': {"lat": 40.7527, "lng": -73.8826},
-                'flushing': {"lat": 40.7677, "lng": -73.8334},
-                'elmhurst': {"lat": 40.7365, "lng": -73.8806},
-                'forest hills': {"lat": 40.7234, "lng": -73.8441},
-                'jamaica': {"lat": 40.7020, "lng": -73.7888},
-                'queens village': {"lat": 40.7174, "lng": -73.7390},
-                'bayside': {"lat": 40.7687, "lng": -73.7716}
-            }
-
-            for area, coords in queens_areas.items():
-                if area in address_lower:
-                    return {
-                        "lat": coords["lat"] + lat_offset,
-                        "lng": coords["lng"] + lng_offset
-                    }
-
-            # Default Queens
-            return {"lat": 40.7444 + lat_offset, "lng": -73.9482 + lng_offset}
-
-        # Bronx geocoding
-        elif 'bronx' in borough_lower:
-            bronx_areas = {
-                'fordham': {"lat": 40.8621, "lng": -73.8965},
-                'riverdale': {"lat": 40.8944, "lng": -73.9064},
-                'south bronx': {"lat": 40.8267, "lng": -73.9064},
-                'concourse': {"lat": 40.8378, "lng": -73.9196},
-                'morris': {"lat": 40.8267, "lng": -73.9242},
-                'hunts point': {"lat": 40.8072, "lng": -73.8883}
-            }
-
-            for area, coords in bronx_areas.items():
-                if area in address_lower:
-                    return {
-                        "lat": coords["lat"] + lat_offset,
-                        "lng": coords["lng"] + lng_offset
-                    }
-
-            # Default Bronx
-            return {"lat": 40.8267 + lat_offset, "lng": -73.9064 + lng_offset}
-
-        # Staten Island geocoding
-        elif 'staten island' in borough_lower:
-            return {"lat": 40.6436 + lat_offset, "lng": -74.0776 + lng_offset}
-
-        # Default fallback to Manhattan
-        return {"lat": 40.7549 + lat_offset, "lng": -73.9707 + lng_offset}
+        # Default to Manhattan if no borough info
+        return {"lat": 40.7549 + (base_number % 100) * 0.0001, "lng": -73.9707 + ((base_number % 50) - 25) * 0.0001}
 
     def find_neighborhood(self, lat, lng):
         """Find neighborhood based on coordinates"""
@@ -728,14 +628,55 @@ class NYCRealEstatePricePredictor:
             # Neighborhood-specific calculations
             neighborhood_name = neighborhood["name"] if neighborhood else "Unknown"
 
-            # Crime sentiment and safety based on neighborhood
-            crime_sentiment = random.uniform(-0.1, 0.3) if neighborhood.get("borough") == "Manhattan" else random.uniform(-0.2, 0.1)
-            safety_score = max(4.0, min(9.0, 7.0 + crime_sentiment * 2))
+            # Crime sentiment and safety based on neighborhood (exact Colab values)
+            neighborhood_safety_scores = {
+                "Financial District": 0.15, "Tribeca": 0.25, "SoHo": 0.2, "West Village": 0.18,
+                "East Village": -0.05, "Chelsea": 0.1, "Midtown West": 0.05, "Midtown East": 0.08,
+                "Upper East Side": 0.2, "Upper West Side": 0.15, "Harlem": -0.15,
+                "DUMBO": 0.12, "Brooklyn Heights": 0.18, "Park Slope": 0.15, "Williamsburg": 0.05,
+                "Long Island City": 0.08, "Astoria": 0.1, "Forest Hills": 0.12, "Riverdale": 0.2,
+                "South Bronx": -0.25, "St. George": 0.1
+            }
+            crime_sentiment = neighborhood_safety_scores.get(neighborhood_name, 0.0)
 
-            # Realistic square footage for restaurants
-            estimated_sqft = random.uniform(2500, 4000)
-            building_age = random.uniform(15, 40)
-            type_premium = 1.1  # Restaurant/retail premium
+            neighborhood_base_safety = {
+                "Financial District": 7.5, "Tribeca": 8.2, "SoHo": 8.0, "West Village": 7.8,
+                "East Village": 6.5, "Chelsea": 7.3, "Midtown West": 7.0, "Midtown East": 7.2,
+                "Upper East Side": 8.0, "Upper West Side": 7.7, "Harlem": 5.5,
+                "DUMBO": 7.5, "Brooklyn Heights": 7.8, "Park Slope": 7.6, "Williamsburg": 6.8,
+                "Long Island City": 7.0, "Astoria": 7.2, "Forest Hills": 7.5, "Riverdale": 8.0,
+                "South Bronx": 4.5, "St. George": 6.8
+            }
+            safety_score = neighborhood_base_safety.get(neighborhood_name, 7.0)
+
+            # Location-specific building characteristics (exact Colab values)
+            neighborhood_sqft_multiplier = {
+                "Tribeca": 1.3, "SoHo": 1.25, "West Village": 1.15, "East Village": 0.9,
+                "Chelsea": 1.1, "Midtown West": 0.95, "Midtown East": 1.0,
+                "Upper East Side": 1.05, "Upper West Side": 1.0, "Financial District": 1.2,
+                "DUMBO": 1.15, "Brooklyn Heights": 1.1, "Park Slope": 1.05, "Williamsburg": 1.0,
+                "Long Island City": 0.95, "Astoria": 0.85, "Forest Hills": 0.8
+            }
+            sqft_multiplier = neighborhood_sqft_multiplier.get(neighborhood_name, 1.0)
+            estimated_sqft = 3500 * sqft_multiplier  # Base 3500 sqft adjusted by location
+
+            neighborhood_age_map = {
+                "Financial District": 25, "Tribeca": 35, "SoHo": 30, "West Village": 40,
+                "East Village": 35, "Chelsea": 25, "Midtown West": 20, "Midtown East": 25,
+                "Upper East Side": 30, "Upper West Side": 35, "Harlem": 45,
+                "DUMBO": 15, "Brooklyn Heights": 40, "Park Slope": 35, "Williamsburg": 20,
+                "Long Island City": 15, "Astoria": 30, "Forest Hills": 25
+            }
+            building_age = neighborhood_age_map.get(neighborhood_name, 30)
+
+            commercial_appeal_map = {
+                "Financial District": 1.25, "Tribeca": 1.3, "SoHo": 1.35, "West Village": 1.2,
+                "East Village": 1.1, "Chelsea": 1.15, "Midtown West": 1.1, "Midtown East": 1.15,
+                "Upper East Side": 1.1, "Upper West Side": 1.05, "Harlem": 0.95,
+                "DUMBO": 1.2, "Brooklyn Heights": 1.15, "Park Slope": 1.1, "Williamsburg": 1.15,
+                "Long Island City": 1.05, "Astoria": 1.0, "Forest Hills": 0.95
+            }
+            type_premium = commercial_appeal_map.get(neighborhood_name, 1.0)
 
             # Prepare features for prediction
             features = np.array([[
@@ -753,8 +694,19 @@ class NYCRealEstatePricePredictor:
             features_scaled = self.scaler.transform(features)
             predicted_price = self.random_forest_model.predict(features_scaled)[0]
 
-            # Apply reasonable bounds
-            predicted_price = max(80, min(1200, predicted_price))
+            # Apply neighborhood-specific bounds like Colab
+            neighborhood_price_ranges = {
+                "Financial District": (150, 800), "Tribeca": (200, 1000), "SoHo": (180, 900),
+                "West Village": (160, 750), "East Village": (120, 500), "Chelsea": (400, 800),
+                "Midtown West": (130, 600), "Midtown East": (140, 650), "Upper East Side": (120, 550),
+                "Upper West Side": (110, 500), "Harlem": (80, 350),
+                "DUMBO": (130, 600), "Brooklyn Heights": (120, 550), "Park Slope": (110, 450),
+                "Williamsburg": (120, 500), "Long Island City": (100, 400), "Astoria": (90, 350),
+                "Forest Hills": (85, 300), "Riverdale": (70, 280), "South Bronx": (60, 200),
+                "St. George": (65, 220)
+            }
+            min_price, max_price = neighborhood_price_ranges.get(neighborhood_name, (80, 500))
+            predicted_price = max(min_price, min(max_price, predicted_price))
             total_value = predicted_price * estimated_sqft
 
             return {
@@ -764,6 +716,7 @@ class NYCRealEstatePricePredictor:
                 'neighborhood': neighborhood_name,
                 'borough': neighborhood.get("borough", borough or "Unknown"),
                 'water_score': round(water_score, 2),
+                'transit_score': round(transit_score, 1),
                 'business_premium': round(business_premium, 2),
                 'safety_score': round(safety_score, 1),
                 'ml_confidence': random.randint(85, 98)
@@ -789,7 +742,7 @@ class RestaurantScraper:
         # Caching system
         self.cache_file = 'violations_cache.json'
         self.owner_cache_file = 'owner_lookup_cache.json'
-        self.cache_expiry_hours = 6  # Refresh cache every 6 hours
+        self.cache_expiry_hours = 24  # Cache is valid for 24 hours (updated by scheduler)
         self.owner_cache_expiry_days = 30  # Refresh owner lookups after 30 days
         self.cached_data = self._load_cache()
         self.owner_cache = self._load_owner_cache()
@@ -1252,6 +1205,130 @@ class RestaurantScraper:
 
         return opportunities
 
+    def update_data_background(self, days_back=30):
+        """Background method to update data - called by scheduler"""
+        try:
+            print(f"🕛 Background update started at {datetime.now().strftime('%Y-%m-%d %H:%M:%S EST')}")
+
+            # Get fresh data from NYC API
+            raw_data = self.get_closed_restaurants(days_back=days_back, limit=None)
+            if not raw_data:
+                print("❌ Background update failed: No data from NYC API")
+                return False
+
+            # Process with all features enabled for complete data
+            opportunities = self.clean_and_process_data(
+                raw_data,
+                include_owner_lookup=True,  # Include owners for complete data
+                include_real_estate=True
+            )
+
+            if not opportunities:
+                print("❌ Background update failed: No opportunities processed")
+                return False
+
+            # Save the processed data to cache
+            self._save_cache(opportunities)
+            print(f"✅ Background update completed: {len(opportunities)} opportunities cached")
+            return True
+
+        except Exception as e:
+            print(f"❌ Background update error: {e}")
+            return False
+
+class BackgroundScheduler:
+    """Background scheduler for data updates"""
+
+    def __init__(self):
+        self.running = False
+        self.thread = None
+        self.scraper = None
+
+    def start(self, scraper):
+        """Start the background scheduler"""
+        if self.running:
+            return
+
+        self.scraper = scraper
+        self.running = True
+
+        # Set up EST timezone
+        est = pytz.timezone('US/Eastern')
+
+        # Schedule daily updates at midnight EST
+        schedule.clear()
+        schedule.every().day.at("00:00").do(self._update_data_job)
+
+        # Also schedule a check every hour to handle timezone changes
+        schedule.every().hour.do(self._check_schedule)
+
+        # Start the scheduler thread
+        self.thread = threading.Thread(target=self._run_scheduler, daemon=True)
+        self.thread.start()
+
+        print("🕛 Background scheduler started - daily updates at midnight EST")
+
+        # Run an initial update if cache is empty or very old
+        self._check_initial_update()
+
+    def _check_initial_update(self):
+        """Check if we need an initial update on startup"""
+        if not self.scraper.cached_data or not self.scraper.cached_data.get('opportunities'):
+            print("🚀 No cached data found, running initial background update...")
+            threading.Thread(target=self.scraper.update_data_background, daemon=True).start()
+        else:
+            # Check if cache is more than 12 hours old
+            try:
+                cache_time = datetime.fromisoformat(self.scraper.cached_data.get('timestamp', '2000-01-01T00:00:00'))
+                if datetime.now() - cache_time > timedelta(hours=12):
+                    print("🔄 Cache is stale, running background update...")
+                    threading.Thread(target=self.scraper.update_data_background, daemon=True).start()
+            except:
+                pass
+
+    def _update_data_job(self):
+        """The scheduled job to update data"""
+        if self.scraper:
+            print("🕛 Scheduled midnight update triggered")
+            # Run in a separate thread to avoid blocking the scheduler
+            threading.Thread(target=self.scraper.update_data_background, daemon=True).start()
+
+    def _check_schedule(self):
+        """Hourly check to ensure schedule is working"""
+        est = pytz.timezone('US/Eastern')
+        current_time = datetime.now(est)
+
+        # If it's between midnight and 1 AM EST, ensure we have fresh data
+        if current_time.hour == 0:
+            cache_time_str = self.scraper.cached_data.get('timestamp', '') if self.scraper.cached_data else ''
+            if cache_time_str:
+                try:
+                    cache_time = datetime.fromisoformat(cache_time_str)
+                    # If cache is older than 2 hours, update
+                    if datetime.now() - cache_time > timedelta(hours=2):
+                        print("🔄 Midnight schedule check: updating stale cache")
+                        threading.Thread(target=self.scraper.update_data_background, daemon=True).start()
+                except:
+                    pass
+
+    def _run_scheduler(self):
+        """Run the scheduler in a background thread"""
+        while self.running:
+            try:
+                schedule.run_pending()
+                time.sleep(60)  # Check every minute
+            except Exception as e:
+                print(f"⚠️ Scheduler error: {e}")
+                time.sleep(60)
+
+    def stop(self):
+        """Stop the background scheduler"""
+        self.running = False
+        schedule.clear()
+        if self.thread:
+            self.thread.join(timeout=5)
+        print("🛑 Background scheduler stopped")
+
 # Flask routes
 @app.route('/')
 def serve_index():
@@ -1265,62 +1342,115 @@ def serve_static(filename):
 
 @app.route('/api/opportunities')
 def get_opportunities():
-    """Get current opportunities from cache or fresh data"""
+    """Get current opportunities from cache (fast) or fresh data (slow fallback)"""
     try:
         days = int(request.args.get('days', 30))
-        scraper = RestaurantScraper()
+        quick_mode = request.args.get('quick', 'false').lower() == 'true'
+        global scraper_instance
 
-        # Try to get from cache first
-        cached_opportunities = scraper.get_cached_opportunities(days_back=days)
+        # Use global scraper instance for consistent caching
+        if scraper_instance is None:
+            scraper_instance = RestaurantScraper()
+
+        # ALWAYS try cache first for fast loading
+        cached_opportunities = scraper_instance.get_cached_opportunities(days_back=days)
 
         if cached_opportunities:
-            print(f"⚡ Serving from cache: {len(cached_opportunities)} opportunities")
+            print(f"⚡ Fast response from cache: {len(cached_opportunities)} opportunities")
             opportunities = cached_opportunities
+        elif quick_mode:
+            # Quick mode: return any cached data (even if expired) or empty results
+            print(f"🚀 Quick mode: checking for any cached data...")
+            cache_data = scraper_instance.cached_data
+            if cache_data and cache_data.get('opportunities'):
+                all_cached = cache_data.get('opportunities', [])
+                cutoff_date = datetime.now() - timedelta(days=days)
+                opportunities = []
+                for opp in all_cached:
+                    violation_date_str = opp.get('violationDate', '')
+                    if violation_date_str:
+                        try:
+                            violation_date = datetime.fromisoformat(violation_date_str)
+                            if violation_date >= cutoff_date:
+                                opportunities.append(opp)
+                        except:
+                            continue
+
+                if opportunities:
+                    print(f"⚡ Quick mode: serving cached data: {len(opportunities)} opportunities")
+                else:
+                    print(f"⚡ Quick mode: no valid cached data, returning empty")
+                    opportunities = []
+            else:
+                print(f"⚡ Quick mode: no cache available, returning empty")
+                opportunities = []
         else:
-            print(f"🔄 Cache miss or expired, fetching fresh data...")
-            # Fetch ALL violations for 30 days and cache them
-            raw_data = scraper.get_closed_restaurants(days_back=30, limit=None)  # Always cache 30 days
-            if not raw_data:
-                return jsonify({
-                    'success': False,
-                    'message': 'No data available from NYC API',
-                    'opportunities': [],
-                    'stats': {}
-                })
+            print(f"⚠️ No cache available - checking for background update in progress...")
 
-            # Process data with optional owner lookups for faster initial load
-            quick_load = request.args.get('quick', 'false').lower() == 'true'
-            include_owners = not quick_load  # Skip owners for quick loads
+            # Check if a background update is running
+            cache_data = scraper_instance.cached_data
+            if cache_data and cache_data.get('opportunities'):
+                # We have some cached data, even if expired - use it for fast response
+                all_cached = cache_data.get('opportunities', [])
+                cutoff_date = datetime.now() - timedelta(days=days)
+                opportunities = []
+                for opp in all_cached:
+                    violation_date_str = opp.get('violationDate', '')
+                    if violation_date_str:
+                        try:
+                            violation_date = datetime.fromisoformat(violation_date_str)
+                            if violation_date >= cutoff_date:
+                                opportunities.append(opp)
+                        except:
+                            continue
 
-            all_opportunities = scraper.clean_and_process_data(
-                raw_data,
-                include_owner_lookup=include_owners,
-                include_real_estate=True
-            )
+                if opportunities:
+                    print(f"📋 Serving slightly stale cache for fast response: {len(opportunities)} opportunities")
+                    print("💡 Fresh data will be available on next request (background updating)")
+                else:
+                    opportunities = []
+            else:
+                # No cache at all - we have to fetch (slow path)
+                print(f"🐌 No cache found, forced to fetch fresh data (this will be slow)...")
+                raw_data = scraper_instance.get_closed_restaurants(days_back=30, limit=None)
+                if not raw_data:
+                    return jsonify({
+                        'success': False,
+                        'message': 'No data available from NYC API',
+                        'opportunities': [],
+                        'stats': {}
+                    })
 
-            if not all_opportunities:
-                return jsonify({
-                    'success': False,
-                    'message': 'No restaurant closures found in the 30-day period',
-                    'opportunities': [],
-                    'stats': {}
-                })
+                # Quick processing without owner lookups for faster response
+                all_opportunities = scraper_instance.clean_and_process_data(
+                    raw_data,
+                    include_owner_lookup=False,  # Skip owners for speed
+                    include_real_estate=True
+                )
 
-            # Cache the processed data
-            scraper._save_cache(all_opportunities)
+                if not all_opportunities:
+                    return jsonify({
+                        'success': False,
+                        'message': 'No restaurant closures found in the 30-day period',
+                        'opportunities': [],
+                        'stats': {}
+                    })
 
-            # Filter for the requested time period
-            cutoff_date = datetime.now() - timedelta(days=days)
-            opportunities = []
-            for opp in all_opportunities:
-                violation_date_str = opp.get('violationDate', '')
-                if violation_date_str:
-                    try:
-                        violation_date = datetime.fromisoformat(violation_date_str)
-                        if violation_date >= cutoff_date:
-                            opportunities.append(opp)
-                    except:
-                        continue
+                # Cache the processed data
+                scraper_instance._save_cache(all_opportunities)
+
+                # Filter for the requested time period
+                cutoff_date = datetime.now() - timedelta(days=days)
+                opportunities = []
+                for opp in all_opportunities:
+                    violation_date_str = opp.get('violationDate', '')
+                    if violation_date_str:
+                        try:
+                            violation_date = datetime.fromisoformat(violation_date_str)
+                            if violation_date >= cutoff_date:
+                                opportunities.append(opp)
+                        except:
+                            continue
 
         if not opportunities:
             return jsonify({
@@ -1454,27 +1584,37 @@ predictor_instance = None
 if __name__ == '__main__':
     print("🚀 Starting NYC Distressed Real Estate Backend with REAL DATA")
     print("📊 Features: Real NYC health violation data + ML real estate predictions")
+    print("🕛 Background scheduler: Daily updates at midnight EST for fast loading")
     print("🌐 Website available at: http://localhost:5000")
     print("🚀 Ready for production deployment")
 
     import atexit
 
     def cleanup():
-        """Save cache on exit"""
-        global predictor_instance
+        """Save cache and stop scheduler on exit"""
+        global predictor_instance, background_scheduler, scraper_instance
+
+        # Stop background scheduler
+        if background_scheduler:
+            background_scheduler.stop()
+
+        # Save caches
         if predictor_instance and hasattr(predictor_instance, '_save_cache'):
             predictor_instance._save_cache()
 
-        # Also save owner lookup cache
-        try:
-            scraper = RestaurantScraper()
-            scraper._save_owner_cache()
-        except:
-            pass
+        if scraper_instance:
+            scraper_instance._save_owner_cache()
+            if hasattr(scraper_instance, '_save_cache'):
+                scraper_instance._save_cache()
 
-        print("💾 Cache saved on exit")
+        print("💾 Cache saved and scheduler stopped on exit")
 
     atexit.register(cleanup)
+
+    # Initialize global scraper and start background scheduler
+    scraper_instance = RestaurantScraper()
+    background_scheduler = BackgroundScheduler()
+    background_scheduler.start(scraper_instance)
 
     if __name__ == '__main__':
         # Development server
