@@ -443,7 +443,7 @@ class NYCRealEstateDashboard {
 
     renderDeals() {
         const dealsList = document.getElementById('dealsList');
-        
+
         if (this.filteredDeals.length === 0) {
             dealsList.innerHTML = `
                 <div class="loading">
@@ -454,6 +454,64 @@ class NYCRealEstateDashboard {
             return;
         }
 
+        // Performance optimization: Only render first 20 deals initially for fast loading
+        const dealsToShow = this.filteredDeals.slice(0, 20);
+        const remainingCount = this.filteredDeals.length - 20;
+
+        // Use DocumentFragment for better performance
+        const fragment = document.createDocumentFragment();
+
+        dealsToShow.forEach(deal => {
+            const dealElement = document.createElement('div');
+            dealElement.className = 'deal-card';
+            dealElement.onclick = () => this.showPropertyDetails(deal.id);
+            dealElement.innerHTML = `
+                <div class="deal-header">
+                    <div class="deal-name">${deal.name}</div>
+                    <div class="deal-value">${this.formatCurrency(deal.totalValue, true)}</div>
+                </div>
+                <div class="deal-address">
+                    <i class="fas fa-map-marker-alt"></i>
+                    ${deal.address}, ${deal.neighborhood}
+                </div>
+                <div class="deal-metrics">
+                    <div class="metric">
+                        <i class="fas fa-dollar-sign metric-icon"></i>
+                        <span>$${deal.pricePerSqft}/sqft</span>
+                    </div>
+                    <div class="metric">
+                        <i class="fas fa-robot metric-icon"></i>
+                        <span>ML: ${deal.mlConfidence}%</span>
+                    </div>
+                    <div class="metric">
+                        <i class="fas fa-calendar metric-icon"></i>
+                        <span>${deal.violationDate}</span>
+                    </div>
+                </div>
+            `;
+            fragment.appendChild(dealElement);
+        });
+
+        // Add "Load More" button if there are more deals
+        if (remainingCount > 0) {
+            const loadMoreBtn = document.createElement('div');
+            loadMoreBtn.className = 'load-more-btn';
+            loadMoreBtn.innerHTML = `
+                <button class="btn btn-secondary btn-full" onclick="dashboard.loadMoreDeals()">
+                    <i class="fas fa-plus"></i> Load ${remainingCount} More Opportunities
+                </button>
+            `;
+            fragment.appendChild(loadMoreBtn);
+        }
+
+        // Clear and add all at once for better performance
+        dealsList.innerHTML = '';
+        dealsList.appendChild(fragment);
+    }
+
+    loadMoreDeals() {
+        // Show all deals when requested
+        const dealsList = document.getElementById('dealsList');
         dealsList.innerHTML = this.filteredDeals.map(deal => `
             <div class="deal-card" onclick="dashboard.showPropertyDetails(${deal.id})">
                 <div class="deal-header">
@@ -1091,18 +1149,15 @@ class NYCRealEstateDashboard {
             data: nonEmptyData
         });
 
-        // Update the histogram chart with new data
+        // Update the histogram chart with new data (no animation for speed)
         this.valuePieChart.data.labels = nonEmptyLabels;
         this.valuePieChart.data.datasets[0].data = nonEmptyData;
-        this.valuePieChart.update('active');
+        this.valuePieChart.update('none'); // No animation for faster update
 
-        // Force resize and ensure visibility
-        setTimeout(() => {
-            if (this.valuePieChart) {
-                this.valuePieChart.resize();
-                console.log('Histogram resize completed - chart should now be visible');
-            }
-        }, 100);
+        // Minimal resize without delay
+        if (this.valuePieChart) {
+            this.valuePieChart.resize();
+        }
 
         console.log('Histogram updated successfully with', nonEmptyData.length, 'bins');
     }
