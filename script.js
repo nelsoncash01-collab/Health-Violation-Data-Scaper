@@ -267,9 +267,16 @@ class NYCRealEstateDashboard {
             try {
                 const url = `${API_BASE_URL}/api/opportunities?days=${days}&quick=true&t=${Date.now()}`;
                 console.log('🔗 Fetching:', url);
+
+                // Create compatible AbortController for timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+
                 const response = await fetch(url, {
-                    signal: AbortSignal.timeout(10000) // 10 second timeout
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
 
                 if (response.ok) {
                     data = await response.json();
@@ -277,10 +284,15 @@ class NYCRealEstateDashboard {
                         console.log('✅ Quick cache success!');
                     } else {
                         console.log('⚠️ Quick cache empty, trying full load...');
-                        // Try full load as fallback
+                        // Try full load as fallback with compatible timeout
+                        const fullController = new AbortController();
+                        const fullTimeoutId = setTimeout(() => fullController.abort(), 20000);
+
                         const fullResponse = await fetch(`${API_BASE_URL}/api/opportunities?days=${days}&quick=false`, {
-                            signal: AbortSignal.timeout(20000) // 20 second timeout for full load
+                            signal: fullController.signal
                         });
+                        clearTimeout(fullTimeoutId);
+
                         if (fullResponse.ok) {
                             data = await fullResponse.json();
                         }
@@ -289,6 +301,7 @@ class NYCRealEstateDashboard {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
             } catch (error) {
+                clearTimeout(timeoutId);
                 console.log('❌ API call failed:', error.message);
                 throw error;
             }
