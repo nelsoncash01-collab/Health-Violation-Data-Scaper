@@ -280,21 +280,33 @@ class NYCRealEstateDashboard {
 
                 if (response.ok) {
                     data = await response.json();
+                    console.log('📊 Quick response:', data);
+
                     if (data.success && data.opportunities && data.opportunities.length > 0) {
                         console.log('✅ Quick cache success!');
                     } else {
-                        console.log('⚠️ Quick cache empty, trying full load...');
+                        console.log('⚠️ Quick cache empty or failed, trying full load...');
                         // Try full load as fallback with compatible timeout
                         const fullController = new AbortController();
-                        const fullTimeoutId = setTimeout(() => fullController.abort(), 20000);
+                        const fullTimeoutId = setTimeout(() => fullController.abort(), 30000);
 
-                        const fullResponse = await fetch(`${API_BASE_URL}/api/opportunities?days=${days}&quick=false`, {
-                            signal: fullController.signal
-                        });
-                        clearTimeout(fullTimeoutId);
+                        try {
+                            const fullResponse = await fetch(`${API_BASE_URL}/api/opportunities?days=${days}&quick=false&t=${Date.now()}`, {
+                                signal: fullController.signal
+                            });
+                            clearTimeout(fullTimeoutId);
 
-                        if (fullResponse.ok) {
-                            data = await fullResponse.json();
+                            if (fullResponse.ok) {
+                                const fullData = await fullResponse.json();
+                                console.log('📊 Full response:', fullData);
+                                if (fullData.success && fullData.opportunities) {
+                                    data = fullData;
+                                    console.log('✅ Full load success!');
+                                }
+                            }
+                        } catch (fullError) {
+                            clearTimeout(fullTimeoutId);
+                            console.log('❌ Full load failed:', fullError.message);
                         }
                     }
                 } else {
@@ -305,9 +317,9 @@ class NYCRealEstateDashboard {
                 console.log('❌ API call failed:', error.message);
                 throw error;
             }
-            console.log(`📊 Received ${data.opportunities?.length || 0} opportunities for ${days} days`);
+            console.log(`📊 Received ${data?.opportunities?.length || 0} opportunities for ${days} days`);
 
-            if (data.success && data.opportunities && data.opportunities.length > 0) {
+            if (data && data.success && data.opportunities && data.opportunities.length > 0) {
                 this.deals = data.opportunities;
                 this.filteredDeals = [...this.deals];
                 console.log(`✅ Updated deals array with ${this.deals.length} opportunities`);
