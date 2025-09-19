@@ -38,11 +38,14 @@ class NYCRealEstateDashboard {
         }, 30000); // 30 second overall timeout
 
         try {
+            console.log('🚀 Starting data load...');
             await this.loadDashboardDataAsync();
             clearTimeout(loadTimeout);
+            console.log('✅ Data load completed successfully');
         } catch (error) {
             clearTimeout(loadTimeout);
-            console.error('Initialization failed:', error);
+            console.error('❌ Initialization failed:', error);
+            this.showError(`Loading failed: ${error.message}`);
         }
     }
 
@@ -50,11 +53,25 @@ class NYCRealEstateDashboard {
         // Show skeleton loading for all cards immediately
         this.showLoadingSkeleton();
 
-        // Update stats with placeholder values
-        document.getElementById('newOpportunities').textContent = '...';
-        document.getElementById('avgValue').textContent = 'Loading...';
-        document.getElementById('neighborhoods').textContent = '...';
-        document.getElementById('mlAccuracy').textContent = '...%';
+        // Update stats with placeholder values and debug info
+        document.getElementById('newOpportunities').textContent = 'Loading...';
+        document.getElementById('avgValue').textContent = 'Starting...';
+        document.getElementById('neighborhoods').textContent = 'Init...';
+        document.getElementById('mlAccuracy').textContent = 'Please wait...';
+
+        // Show immediate feedback in opportunities list
+        const dealsList = document.getElementById('dealsList');
+        if (dealsList) {
+            dealsList.innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Loading opportunities... Please wait</span>
+                    <div style="margin-top: 10px; font-size: 12px; opacity: 0.7;">
+                        Debug: App started at ${new Date().toLocaleTimeString()}
+                    </div>
+                </div>
+            `;
+        }
     }
 
     async loadDashboardDataAsync() {
@@ -246,8 +263,11 @@ class NYCRealEstateDashboard {
 
             // Try quick cache first (should be instant)
             console.log('🚀 Trying quick cache...');
+            console.log('📡 API URL:', API_BASE_URL);
             try {
-                const response = await fetch(`${API_BASE_URL}/api/opportunities?days=${days}&quick=true`, {
+                const url = `${API_BASE_URL}/api/opportunities?days=${days}&quick=true&t=${Date.now()}`;
+                console.log('🔗 Fetching:', url);
+                const response = await fetch(url, {
                     signal: AbortSignal.timeout(10000) // 10 second timeout
                 });
 
