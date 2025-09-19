@@ -37,8 +37,12 @@ class NYCRealEstateDashboard {
                 const forceBtn = document.createElement('button');
                 forceBtn.innerHTML = '🔥 FORCE LOAD';
                 forceBtn.style.cssText = 'background: red; color: white; padding: 8px; border: none; border-radius: 4px; margin-left: 10px; font-size: 12px;';
-                forceBtn.onclick = () => this.loadDashboardDataAsync();
+                forceBtn.onclick = () => {
+                    this.updateDebugStatus('🖱️ Force Load button clicked');
+                    this.loadDashboardDataAsync();
+                };
                 dealsCard.appendChild(forceBtn);
+                this.updateDebugStatus('🔘 Force Load button added');
             }
         }, 1000);
 
@@ -50,13 +54,13 @@ class NYCRealEstateDashboard {
         }, 30000); // 30 second overall timeout
 
         try {
-            console.log('🚀 Starting data load...');
+            this.updateDebugStatus('🚀 Starting automatic data load...');
             await this.loadDashboardDataAsync();
             clearTimeout(loadTimeout);
-            console.log('✅ Data load completed successfully');
+            this.updateDebugStatus('✅ Automatic load completed successfully');
         } catch (error) {
             clearTimeout(loadTimeout);
-            console.error('❌ Initialization failed:', error);
+            this.updateDebugStatus(`❌ Initialization failed: ${error.message}`);
             this.showError(`Loading failed: ${error.message}`);
         }
     }
@@ -71,6 +75,9 @@ class NYCRealEstateDashboard {
         document.getElementById('neighborhoods').textContent = 'Init...';
         document.getElementById('mlAccuracy').textContent = 'Please wait...';
 
+        // Create visible debug status area
+        this.createDebugStatus();
+
         // Show immediate feedback in opportunities list
         const dealsList = document.getElementById('dealsList');
         if (dealsList) {
@@ -79,26 +86,58 @@ class NYCRealEstateDashboard {
                     <i class="fas fa-spinner fa-spin"></i>
                     <span>Loading opportunities... Please wait</span>
                     <div style="margin-top: 10px; font-size: 12px; opacity: 0.7;">
-                        Debug: App started at ${new Date().toLocaleTimeString()}
+                        App started at ${new Date().toLocaleTimeString()}
                     </div>
                 </div>
             `;
         }
     }
 
+    createDebugStatus() {
+        // Create a visible debug status box at the top of the page
+        const debugBox = document.createElement('div');
+        debugBox.id = 'debugStatus';
+        debugBox.style.cssText = `
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #333;
+            color: #fff;
+            padding: 10px;
+            border-radius: 5px;
+            max-width: 300px;
+            font-size: 12px;
+            z-index: 9999;
+            border: 2px solid #ffd700;
+        `;
+        debugBox.innerHTML = '<strong>🔍 DEBUG STATUS</strong><br>Initializing...';
+        document.body.appendChild(debugBox);
+    }
+
+    updateDebugStatus(message) {
+        const debugBox = document.getElementById('debugStatus');
+        if (debugBox) {
+            const timestamp = new Date().toLocaleTimeString();
+            debugBox.innerHTML += `<br>[${timestamp}] ${message}`;
+            debugBox.scrollTop = debugBox.scrollHeight;
+        }
+    }
+
     async loadDashboardDataAsync() {
         // Load data without blocking the UI
         try {
-            console.log('🔥 FORCE LOADING DATA NOW');
+            this.updateDebugStatus('🔥 FORCE LOADING DATA NOW');
             // FORCE direct API call to working endpoint
             const response = await fetch('https://health-violation-data-scaper-backend.onrender.com/api/opportunities?days=30&quick=false&force=' + Date.now());
+            this.updateDebugStatus('📡 API Response received');
+
             const data = await response.json();
-            console.log('🔥 FORCED DATA RESPONSE:', data);
+            this.updateDebugStatus(`📊 Data parsed: ${data?.opportunities?.length || 0} opportunities`);
 
             if (data && data.success && data.opportunities) {
                 this.deals = data.opportunities;
                 this.filteredDeals = [...this.deals];
-                console.log('🔥 FORCE LOADED', this.deals.length, 'opportunities');
+                this.updateDebugStatus(`✅ FORCE LOADED ${this.deals.length} opportunities`);
 
                 // Force update everything
                 this.updateStats(data.stats);
@@ -107,14 +146,24 @@ class NYCRealEstateDashboard {
                 this.updateCharts();
                 this.hideLoading();
 
-                console.log('🔥 FORCE UPDATE COMPLETE');
+                this.updateDebugStatus('🎉 FORCE UPDATE COMPLETE - SUCCESS!');
+
+                // Hide debug box after 10 seconds on success
+                setTimeout(() => {
+                    const debugBox = document.getElementById('debugStatus');
+                    if (debugBox) {
+                        debugBox.style.display = 'none';
+                    }
+                }, 10000);
+
                 return;
             }
 
+            this.updateDebugStatus('⚠️ Force load failed, trying fallback...');
             // Fallback to original logic if force fails
             await this.loadDashboardData();
         } catch (error) {
-            console.log('❌ Data loading failed:', error);
+            this.updateDebugStatus(`❌ ERROR: ${error.message}`);
             this.showError('Unable to load data. Please refresh the page.');
         }
     }
